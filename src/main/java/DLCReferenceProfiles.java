@@ -5,9 +5,7 @@ public class DLCReferenceProfiles {
     private static final LinkedHashMap<String,LinkedHashMap<String,HashMap<Long,byte[]>>> data=new LinkedHashMap<>();
     static { try { load(); } catch(Exception e) { throw new RuntimeException(e); } }
     private static void load() throws Exception {
-        InputStream in=DLCReferenceProfiles.class.getResourceAsStream("/dlc_compare_profiles.tsv");
-        if(in==null) throw new FileNotFoundException("dlc_compare_profiles.tsv");
-        try(BufferedReader br=new BufferedReader(new InputStreamReader(in,"UTF-8"))){
+        try(BufferedReader br=CompressedResource.open(DLCReferenceProfiles.class,"/dlc_compare_profiles.tsv.gz.b64")){
             String line, archive=null, profile=null;
             while((line=br.readLine())!=null){
                 if(line.isEmpty()||line.startsWith("#"))continue;
