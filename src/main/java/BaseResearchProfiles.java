@@ -15,9 +15,7 @@ public class BaseResearchProfiles {
     private static Profile profile;
     static { try { load(); } catch(Exception e) { throw new RuntimeException(e); } }
     private static void load() throws Exception {
-        InputStream in=BaseResearchProfiles.class.getResourceAsStream("/base_research.tsv");
-        if(in==null) throw new FileNotFoundException("base_research.tsv");
-        try(BufferedReader br=new BufferedReader(new InputStreamReader(in,"UTF-8"))){
+        try(BufferedReader br=CompressedResource.open(BaseResearchProfiles.class,"/base_research.tsv.gz.b64")){
             String line;
             while((line=br.readLine())!=null){
                 if(line.isEmpty()||line.startsWith("#")) continue;
