@@ -37,3 +37,5 @@ jobs:
           else
             gh release create "$TAG" "$JAR" --target main --title 'DXMD Archive Editor Pro v0.6.9' --notes-file RELEASE_NOTES.md
           fi
+
+# Updating this workflow intentionally triggers the v0.6.9 release build.
