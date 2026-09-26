@@ -8,6 +8,7 @@ public class Launcher {
     private static DLCEditorPanel dlcPanel;
     private static BaseResearchPanel baseResearchPanel;
     private static XPRewardPanel xpRewardPanel;
+    private static WeaponReferencePanel weaponReferencePanel;
     private static JLabel installStatus;
     private static JButton restoreOriginalsButton;
 
@@ -34,10 +35,12 @@ public class Launcher {
             dlcPanel=new DLCEditorPanel();
             baseResearchPanel=new BaseResearchPanel();
             xpRewardPanel=new XPRewardPanel();
+            weaponReferencePanel=new WeaponReferencePanel();
             JTabbedPane tabs=new JTabbedPane();
             tabs.addTab("Base Game", mainWindow);
             tabs.addTab("Base Research", baseResearchPanel);
             tabs.addTab("XP Rewards", xpRewardPanel);
+            tabs.addTab("Weapon Reference", weaponReferencePanel);
             tabs.addTab("DLC Mod Fields", dlcPanel);
             jf.add(tabs, BorderLayout.CENTER);
 
