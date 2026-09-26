@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.6.11  
+> **Current version:** v0.6.12  
 > **Runtime:** Java 11 or newer  
 > **Primary platform:** Windows
 
@@ -28,7 +28,7 @@ DLC/runtime/DLCPackTactical.layer.0.all.archive
 
 Select `DXMD.exe` and the editor resolves the expected base/DLC structure automatically. Startup detection only walks upward through the application path and validates the DXMD directory layout; it does not scan arbitrary nearby folders.
 
-## v0.6.11 tab layout
+## v0.6.12 tab layout
 
 Confirmed base-game editing is organized by purpose instead of one large Base Game tab:
 
@@ -87,16 +87,16 @@ Known mappings remain visible in Base Fields for verification, but normal editin
 
 ### Archive-order and context audit
 
-v0.6.11 reworked the context presentation after auditing the Base Fields list against the clean base archive.
+v0.6.12 reworked the context presentation after auditing the Base Fields list against the clean base archive.
 
 - Field ranges are sorted by physical archive offset and validated as unique/non-overlapping before the table is shown.
 - Base Fields column sorting is disabled so the research list stays in physical archive order. Filtering hides rows but does not reorder them.
-- The **Nearby context / field** column is now derived conservatively from readable archive identifiers instead of treating every nearest string as an exact field name.
+- The **Nearby context / field** column is derived conservatively from readable archive identifiers instead of treating every nearest string as an exact field name.
 - Artificial duplicate suffixes such as `FIRE_PATTERN_01 #2` / `#3` are no longer presented as separate identities. Rows in the same nearby structure can share `FIRE_PATTERN_01` or a broader identifier-block span.
 - Dense structures such as XP/reward records use verified internal archive names where mappings are known; uncertain rows remain contextual rather than being promoted to Known.
 - If the archive does not provide a trustworthy readable identifier near a research row, the UI says so rather than displaying random printable data as a name.
 
-The v0.6.9 decoded XP/reward overlay remains active in Base Fields. v0.6.11 explicitly restores and validates this loader path after it was accidentally omitted during the v0.6.10 source reorganization.
+The v0.6.9 decoded XP/reward overlay remains active in Base Fields. v0.6.12 restores both the overlay loader and the complete known-good compressed overlay resource after the v0.6.10 reorganization exposed an incomplete source-tree copy.
 
 Comparison profiles currently include Hardcore Revival Normal/Optional, Adam 2.0, Adam 3.0, Tweaks, Master Inventory, No Health Regen variants, More Energy Regeneration Half/Full and Inventory Stacking.
 
@@ -144,7 +144,7 @@ Linux/macOS:
 The source targets Java 11 with `javac --release 11`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.6.11.jar
+dist/DXMD-Archive-Editor-Pro-v0.6.12.jar
 ```
 
 ## Credits
