@@ -287,6 +287,10 @@ build.sh                Unix-like build script
 - Absolute offsets can vary between game releases/store builds. Current work is primarily based on the archive layouts supplied during development.
 - The editor intentionally allows already-modded archives; use the comparison and backup tools accordingly.
 
+## Credits
+
+Special thanks to **MohamedASalama** and **Grognougnou** for their work on Deus Ex: Mankind Divided archive-file editing and for helping establish the techniques and knowledge that make deeper archive research possible.
+
 ## Community research references
 
 A large part of the field mapping has been helped by controlled comparisons against community-created DXMD archive mods and their documentation. Reference material used during research has included mods such as Hardcore Revival, Adam 2.0/3.0, Tweaks, Master Inventory, I Need The Edge, IPOAO, Silence To The Guns, Micro Assembler Overheat Fix, Icarus Reflexes, Mankind Redefined, No Health Regen, More Energy Regeneration, and Inventory Stacking.
