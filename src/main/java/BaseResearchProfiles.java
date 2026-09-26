@@ -15,18 +15,7 @@ public class BaseResearchProfiles {
     private static Profile profile;
     static { try { load(); } catch(Exception e) { throw new RuntimeException(e); } }
     private static void load() throws Exception {
-        try(BufferedReader br=CompressedResource.openParts(BaseResearchProfiles.class,
-                "/base_research.part01.b64",
-                "/base_research.part02.b64",
-                "/base_research.tail01.b64",
-                "/base_research.tail02.b64",
-                "/base_research.tail03.b64",
-                "/base_research.tail04.b64",
-                "/base_research.tail05.b64",
-                "/base_research.tail06.b64",
-                "/base_research.tail07.b64",
-                "/base_research.tail08.b64",
-                "/base_research.tail09.b64")){
+        try(BufferedReader br=CompressedResource.open(BaseResearchProfiles.class,"/base_research.tsv.gz.b64")){
             String line;
             while((line=br.readLine())!=null){
                 if(line.isEmpty()||line.startsWith("#")) continue;
