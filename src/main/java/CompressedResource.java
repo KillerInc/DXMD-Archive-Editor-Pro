@@ -5,14 +5,24 @@ import java.util.zip.GZIPInputStream;
 
 final class CompressedResource {
     private CompressedResource() {}
+
     static BufferedReader open(Class<?> owner, String resource) throws IOException {
-        InputStream in = owner.getResourceAsStream(resource);
-        if (in == null) throw new FileNotFoundException(resource);
+        return openParts(owner, resource);
+    }
+
+    static BufferedReader openParts(Class<?> owner, String... resources) throws IOException {
         ByteArrayOutputStream encoded = new ByteArrayOutputStream();
         byte[] buf = new byte[8192];
-        int n;
-        while ((n = in.read(buf)) >= 0) encoded.write(buf, 0, n);
+        for (String resource : resources) {
+            try (InputStream in = owner.getResourceAsStream(resource)) {
+                if (in == null) throw new FileNotFoundException(resource);
+                int n;
+                while ((n = in.read(buf)) >= 0) encoded.write(buf, 0, n);
+            }
+        }
         byte[] gz = Base64.getMimeDecoder().decode(encoded.toByteArray());
-        return new BufferedReader(new InputStreamReader(new GZIPInputStream(new ByteArrayInputStream(gz)), StandardCharsets.UTF_8));
+        return new BufferedReader(new InputStreamReader(
+                new GZIPInputStream(new ByteArrayInputStream(gz)),
+                StandardCharsets.UTF_8));
     }
 }
