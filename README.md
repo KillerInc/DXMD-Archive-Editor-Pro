@@ -1,22 +1,22 @@
 # DXMD Archive Editor Pro
 
-A Java/Swing archive-value editor and research tool for **Deus Ex: Mankind Divided**.
+A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-DXMD Archive Editor Pro is built around a simple goal: make known gameplay values easy to edit while also providing a safe research view for discovering and documenting additional values inside the game's `.archive` files.
-
-> **Current version:** v0.6.9  
+> **Current version:** v0.6.10  
 > **Runtime:** Java 11 or newer  
-> **Platform:** Windows is the primary target. The editor itself is Java/Swing.
+> **Primary platform:** Windows
 
-## What it edits
+The project does **not** redistribute Deus Ex game archives.
 
-The editor currently works with the base-game archive:
+## Supported archives
+
+Base game:
 
 ```text
 runtime/Game.layer.1.all.archive
 ```
 
-and, when installed, these DLC archives:
+Supported installed DLC packs:
 
 ```text
 DLC/runtime/DLCPackAssault.layer.0.all.archive
@@ -26,324 +26,122 @@ DLC/runtime/DLCPackIntruder.layer.0.all.archive
 DLC/runtime/DLCPackTactical.layer.0.all.archive
 ```
 
-The program does **not** ship with any Deus Ex game archives.
+Select `DXMD.exe` and the editor resolves the expected base/DLC structure automatically. Startup detection only walks upward through the application path and validates the DXMD directory layout; it does not scan arbitrary nearby folders.
 
-## Main features
+## v0.6.10 tab layout
 
-### Automatic game detection
+Confirmed base-game editing is now organized by purpose instead of one large Base Game tab:
 
-You can select `DXMD.exe` and the editor resolves the proper game root and archive paths automatically.
+- **Weapon Stats** — confirmed weapon and ammunition controls, currently including mapped magazine capacities and ammunition stack sizes.
+- **Player Stats** — energy regeneration, Biocell energy gain, takedown energy cost, and mapped experimental-augmentation behavior.
+- **Inventory Stats** — confirmed item dimensions plus non-ammunition inventory stacks.
+- **Economy & Crafting** — confirmed shop prices and Weapon Parts crafting costs.
+- **XP Rewards** — all confirmed XP/reward editing in one place: hacking, passwords/keycodes, objectives, stealth, remote hacking, exploration, social/CASIE, combat and mechanical-target rewards.
+- **Base Fields** — the full base-game diagnostic/research table. This replaces the old Base Research name.
+- **DLC Fields** — installed DLC research/edit tabs.
 
-For a normal Steam installation the structure looks like:
+**Base Fields** and **DLC Fields** are intentionally the last two top-level tabs. The old **Base Game** tab has been removed after its confirmed edits were assigned to normal categories.
 
-```text
-Deus Ex Mankind Divided/
-├─ retail/
-│  └─ DXMD.exe
-├─ runtime/
-│  └─ Game.layer.1.all.archive
-└─ DLC/
-   └─ runtime/
-      ├─ DLCPackAssault.layer.0.all.archive
-      ├─ DLCPackClassic.layer.0.all.archive
-      ├─ DLCPackEnforcer.layer.0.all.archive
-      ├─ DLCPackIntruder.layer.0.all.archive
-      └─ DLCPackTactical.layer.0.all.archive
-```
+The previous runtime **Weapon Reference** tab has also been removed. DXMD weapon wiki pages, damage-testing material and supplied weapon-stat tables are used by the project as research evidence for identifying more archive fields, not as end-user application UI.
 
-If the JAR is placed somewhere inside the real game directory tree, the editor can also detect the installation at startup. Detection is deliberately structural: it walks upward through parent directories and validates the expected DXMD layout. It does **not** scan arbitrary nearby folders for archive copies.
+## Normal edit behavior
 
-Selecting the wrong archive from inside a valid DXMD installation is also tolerated. The selected file is treated as a location hint and the editor resolves the exact supported archive in the background.
+The categorized tabs use the same straightforward editing style as the original base editor: current values, clean/default presets, descriptions and Apply controls.
 
-### Base Game tab
+The editor tracks explicit user edits. Merely opening a tab or pressing Apply does not rewrite every repeated address behind a grouped logical control. Choosing **Default Values** intentionally marks that category for restoration to its clean values.
 
-The Base Game tab exposes established fields with simple controls. Current mappings include values such as:
+Before writes, the editor preserves a `.bak` file if one does not already exist.
 
-- Hacking XP values
-- Praxis and other shop prices
-- Crafting costs
-- Ammo and consumable stack sizes
-- Inventory dimensions
-- Weapon Parts stack size
-- Tranquilizer Rifle magazine capacity
-- Lancer Rifle magazine capacity
-- Grenade Launcher ammo height
-- Energy auto-regeneration limit
-- Biocell energy gain
-- Takedown energy cost
-- Experimental augmentation behavior
+## XP Rewards
 
-The main tab is intended for fields that have enough evidence behind them to be presented as normal editor controls.
+All confirmed XP edits are consolidated into **XP Rewards** rather than being duplicated across other tabs. Current confirmed/strongly established families include:
 
-### Base Research tab
+- Script Kiddie, Grey Hat, Black Hat, Network Adept, Master Hacker and First Try
+- Access Granted, Free Admission, Open Sesame, Entering without Breaking and Master Felonist
+- Ghost, Smooth Operator and Reset
+- Getting Things Done and Completionist objective-reward records
+- Paving the Way, Machina and Flawless
+- Traveler, Explorer, Pathfinder, Trailblazer and Scholar
+- Silver Tongue, Split Decision, Life Lesson, Spin Doctor, On the Fence, Read the Room, Stop the Press and Wait Your Turn
+- Trooper, Veteran, Elite and the Marchenko-specific reward
+- Merciful Soul, Marksman, Expedient, Multitasker, Shock Therapy, Surprise, Close Shave, Dust to Dust, Introvert, Juggernaut, Crash Landing, Piece by Piece, Sharpshooter, Chain Reaction, Master Blaster, Ring of Fire, Blown Away and Collateral Damage
+- Scrap Metal, Void Warranty and Junk Yard
 
-The Base Research tab is the diagnostic side of the project. It includes known fields plus thousands of candidate regions discovered by comparing clean and modified archive versions.
+DXMD-specific wiki information is treated as strong high-level evidence and is cross-checked against archive-side evidence such as internal names, clean default values, repeated record layouts and controlled mod comparisons. DXHR-only information is not used to identify DXMD fields.
 
-Each field can show:
+## Base Fields
 
-- **Attribute Name** — confirmed, suspected, or unidentified purpose
-- **User ID** — your own editable annotation for discoveries
-- **Current Decimal** — the editable value
-- **Current Hex** — read-only byte representation
-- **Original Hex** — clean-game reference
-- Up to **three comparison profiles** at once
+**Base Fields** contains confirmed mappings plus thousands of research candidates generated from clean/modded archive comparisons. It currently carries **2,553 field records** across **12 comparison profiles**.
 
-`Current Decimal` is the only editable numeric field in the research tables.
+The table includes:
 
-### Comparison profiles
+- Attribute Name
+- nearby/internal context
+- editable User ID
+- editable Current Decimal
+- Current Hex
+- Original Hex
+- up to three selected comparison profiles
 
-The research view can compare the current archive against selected reference profiles. Profiles currently include data derived from multiple community mods and controlled version-to-version comparisons, including:
+Known mappings remain visible in Base Fields for verification, but normal editing of those values is organized in the categorized tabs above.
 
-- Hardcore Revival — Normal
-- Hardcore Revival — Optional
-- Adam 2.0
-- Adam 3.0
-- Tweaks
-- Master Inventory
-- No Health Regen
-- No Health Regen — Variety
-- No Health Regen — Variety B
-- More Energy Regeneration — Half
-- More Energy Regeneration — Full
-- Inventory Stacking
+Comparison profiles currently include Hardcore Revival Normal/Optional, Adam 2.0, Adam 3.0, Tweaks, Master Inventory, No Health Regen variants, More Energy Regeneration Half/Full and Inventory Stacking.
 
-Additional profiles can be added as useful reference archives are studied.
+## DLC Fields
 
-### DLC tabs
+Installed DLC packs are displayed as individual tabs. Missing packs are normal and are not created by the tool. DLC research views support original/current values, comparison profiles, presets, User ID import/export, backups and restore functions.
 
-Installed DLC packs are shown as individual tabs instead of a single pack selector.
+The v0.6.8 fix that initializes DLC Compare selections before building comparison columns remains included.
 
-Missing DLC packs do not create errors and are not treated as required dependencies.
+## Safety and restore behavior
 
-Each installed DLC tab has its own research table, comparison selectors, presets, backup/restore controls, and current/original values.
+Inventory-dimension changes can be unsafe when an affected item already exists in a save. The editor warns before applying those changes. A new game, or dropping affected items and saving before changing dimensions, is the safer testing path.
 
-### Color legend
+Two restore mechanisms serve different purposes:
 
-The research views use color to make testing easier:
+- **Restore `.bak`** replaces the whole archive with the exact pre-editor backup.
+- **Restore Editor Fields to Original** writes only confirmed editor-supported mappings back to clean values. Suspected/unidentified Base Fields records are deliberately left untouched, as are unrelated mod bytes.
 
-- **Green text / known classification** — confirmed or strongly established field
-- **Red** — current value differs from the original/default value
-- **Dark green hex background** — displayed hex matches Original
-- **Blue hex background** — displayed hex differs from Original
-- **Orange / warning classification** — a field with a known save/game risk
+SHA-256 identities are informational only; custom/modded archives are not rejected solely because their hash is unknown.
 
-If a field is both known and modified, the modified indication takes priority so changes are easy to spot.
+## User field identifications
 
-### Risk warnings
-
-Some fields are technically editable but can be unsafe in an existing save. Inventory dimensions are a good example: changing the dimensions of an item already present in a save can cause inventory problems or save instability.
-
-The editor does not block these edits. Instead it:
-
-- Shows the warning in hover text where applicable
-- Displays a warning before applying a risky change
-- Explains the known reason for the warning
-- Recommends a new game where appropriate
-- Provides a **Don't show this warning again this session** option
-
-The suppression lasts only for the current application session.
-
-## Backups and restoration
-
-The editor uses two different recovery systems because they solve different problems.
-
-### `.bak` backup
-
-Before the editor first writes an archive, it creates:
-
-```text
-<archive name>.bak
-```
-
-The backup is not overwritten on later edits. This preserves the exact file state that existed before DXMD Archive Editor Pro first modified it — including any other mods that were already installed.
-
-**Restore `.bak`** returns the entire archive to that exact pre-editor state.
-
-### Restore Editor Fields to Original
-
-The editor also stores compact original-value profiles for mapped fields.
-
-**Restore Editor Fields to Original** writes only the original bytes for fields the editor knows about. It does not replace the entire archive, so unrelated modifications from other mods are left alone.
-
-This is intentionally different from restoring the `.bak` file.
-
-## Archive identification
-
-SHA-256 hashes are used as informational labels only. Known archives may be identified as Original or a known reference profile.
-
-An unknown or custom hash is still editable. The editor does not reject a file merely because another mod has already changed it.
-
-## User field identification files
-
-Research discoveries can be exported with **Save Identifications...** and later restored with **Load Identifications...**.
-
-The TSV export contains data such as:
-
-```text
-Scope
-Archive
-FieldID
-Offset
-Length
-OriginalHex
-CurrentHex
-BuiltInGroup
-BuiltInLabel
-UserID
-```
-
-The internal Field ID and offset are intentionally stored in the export even though the Field ID is hidden in the UI. That gives each discovery a stable identity when reports are shared or later promoted into the built-in Known database.
-
-A useful workflow is:
-
-1. Change one candidate field.
-2. Apply the archive.
-3. Test the result in game.
-4. Enter what the field did in **User ID**.
-5. Save the identification TSV.
-6. Share the TSV with the project so confirmed discoveries can be incorporated into future versions.
+Base Fields and DLC Fields can export/import User ID annotations as TSV. Stable field IDs, offsets, original/current hex, built-in labels and the User ID are included so discoveries can be shared and promoted later when confirmed.
 
 ## Research status
 
-DXMD Archive Editor Pro is partly an editor and partly an ongoing reverse-engineering project.
+The project deliberately distinguishes confirmed mappings from research candidates. Labels such as `Suspected: Weapon Stat — Unknown`, suspected health/consumable controls and `Unidentified` are not treated as established simply because a nearby published value happens to match.
 
-Some fields are fully confirmed. Others are intentionally labeled with names such as:
+Community archive comparisons used during research have included Hardcore Revival, Adam 2.0/3.0, Tweaks, Master Inventory, I Need The Edge, IPOAO, Silence To The Guns, Micro Assembler Overheat Fix, Icarus Reflexes, Mankind Redefined, No Health Regen, More Energy Regeneration and Inventory Stacking.
 
-```text
-Suspected: Weapon Stat — Unknown
-Suspected: Health Regeneration Control
-Unidentified
-```
+## Building
 
-These labels are conservative by design. A suspected field should not be treated as confirmed until controlled archive comparisons or in-game testing establish what it does.
-
-The project has already identified several repeated archive structures, including families related to:
-
-- Item and ammo stacks
-- Inventory dimensions
-- Weapon magazine capacity
-- Weapon upgrade costs
-- Weapon upgrade records such as `AMMO_CAPACITY_01`, `DAMAGE_01`, and similar entries
-- Hacking and other XP rewards
-- Energy regeneration
-- Biocell energy gain
-- Takedown energy consumption
-- Experimental augmentations
-- Suppressor behavior
-- Weapon core records
-
-Long term, the goal is to replace as many fragile fixed offsets as practical with validated record/signature-based discovery.
-
-### XP / reward database
-
-v0.6.9 expands the decoded base-game XP/reward database and adds a dedicated **XP Rewards** tab for confirmed reward controls. The mappings use DXMD-specific reward documentation as high-level evidence and are cross-checked against the clean archive's internal record names, exact default values, repeated 24-byte record layout, and available mod comparison profiles. DXHR-only information is not used to identify DXMD fields.
-
-Confirmed/strongly established families now include:
-
-- Hacking tiers: **Script Kiddie**, **Grey Hat**, **Black Hat**, **Network Adept**, **Master Hacker**, and **First Try**
-- Password/keycode tiers: **Access Granted**, **Free Admission**, **Open Sesame**, **Entering without Breaking**, and **Master Felonist**
-- Stealth: **Ghost**, **Smooth Operator**, and **Reset**
-- Remote hacking: **Paving the Way**, **Machina**, and **Flawless**
-- Exploration: **Traveler**, **Explorer**, **Pathfinder**, **Trailblazer**, and **Scholar**
-- Social rewards: **Silver Tongue**, **Split Decision**, **Life Lesson**, **Spin Doctor**, **On the Fence**, **Read the Room**, **Stop the Press**, and **Wait Your Turn**
-- Enemy/combat tiers: **Trooper**, **Veteran**, **Elite**, and the Marchenko-specific **Sorry to disappoint you, Brother** reward
-- Combat bonuses including **Merciful Soul**, **Marksman**, **Expedient**, **Multitasker**, **Shock Therapy**, **Surprise**, **Close Shave**, **Dust to Dust**, **Introvert**, **Juggernaut**, **Crash Landing**, **Piece by Piece**, **Sharpshooter**, **Chain Reaction**, **Master Blaster**, **Ring of Fire**, **Blown Away**, and **Collateral Damage**
-- Mechanical targets: **Scrap Metal**, **Void Warranty**, and **Junk Yard**
-- Objective-reward families associated with **Getting Things Done** and **Completionist**
-
-Records whose internal names are visible but whose DXMD reward-title mapping is not yet sufficiently specific remain marked **Suspected** rather than being promoted to Known. Examples include `social_interrupt_split`, `remotehacking_haywire`, `combat_xp_twister`, and the `collect_treasure` family.
-
-DXMD-specific reference pages used during this mapping include the Deus Ex Wiki/Fandom **Praxis (DXMD)** and **Experience by area (DXMD)** pages. Archive bytes and controlled mod comparisons remain the confirmation layer used by the editor.
-
-### Weapon research context
-
-v0.6.9 also adds a read-only **Weapon Reference** tab to support archive-field identification. The table collects DXMD weapon inventory ratings and hidden maximum-range values so repeated weapon records can be compared against known game data without treating a number match as proof by itself.
-
-The reference tab intentionally separates displayed inventory ratings from tested gameplay behavior. DXMD-specific wiki/testing material shows that the displayed **Damage**, **Accuracy**, and related ratings can be misleading: silencers apply weapon-specific real damage penalties, armor-piercing ammunition can change actual target damage independently of the visible base rating, and some variants with similar displayed values have substantially different real damage.
-
-Useful archive-research fingerprints now documented in the application include:
-
-- Hidden maximum range values such as **35 m 10mm Pistol**, **60 m Combat Rifle**, **80 m Battle Rifle**, **175 m Sniper Rifle**, and **300 m Lancer Rifle**
-- Nominal base/max Damage, Ammo Capacity, and Rate of Fire values for the major base-game weapons
-- Accuracy, Recoil, and Reload Speed ratings
-- Silencer modifier context and measured weapon-specific damage-loss behavior
-- The Combat Rifle AP-ammunition damage behavior against hard targets
-- Elite Combat Rifle and Elite Battle Rifle test results that demonstrate why visible ratings should not be treated as the underlying damage formula
-- Tactical Shotgun laser/accuracy behavior as evidence for hidden behavior fields beyond the displayed stat
-
-The Weapon Reference tab is research context only. Existing `*_CORE`, `DAMAGE_*`, `AMMO_CAPACITY_*`, `RATE_OF_FIRE_*`, `ACCURACY_*`, `RECOIL_*`, attachment, and similar Base Research rows remain **Suspected/Research** unless their exact archive meaning has independent confirmation.
-
-## Running
-
-With Java 11 or newer installed:
-
-```text
-java -jar DXMD-Archive-Editor-Pro-v0.6.9.jar
-```
-
-On Windows you can normally double-click the JAR if `.jar` files are associated with Java.
-
-## Building from source
-
-### Windows
-
-From a Developer Command Prompt or any shell where `javac` and `jar` are on `PATH`:
+Windows:
 
 ```bat
 build.bat
 ```
 
-### Linux / macOS
+Linux/macOS:
 
 ```bash
 ./build.sh
 ```
 
-The build scripts compile with:
+The source targets Java 11 with `javac --release 11`. The resulting JAR is written to:
 
 ```text
-javac --release 11
+dist/DXMD-Archive-Editor-Pro-v0.6.10.jar
 ```
-
-and place the finished JAR in:
-
-```text
-dist/DXMD-Archive-Editor-Pro-v0.6.9.jar
-```
-
-## Project layout
-
-```text
-src/main/java/          Java source
-src/main/java/options/  Archive option/value types
-src/main/resources/     Research and DLC profile data
-dist/                   Built JAR
-build.bat                Windows build script
-build.sh                 Unix-like build script
-```
-
-## Important notes
-
-- Always keep backups of saves when testing new or suspected fields.
-- Some archive changes may only behave correctly on a new game.
-- Do not assume a research-field name is confirmed unless it is marked as known.
-- Absolute offsets can vary between game releases/store builds. Current work is primarily based on the archive layouts supplied during development.
-- The editor intentionally allows already-modded archives; use the comparison and backup tools accordingly.
 
 ## Credits
 
-**LightPower1** — creator of the original **DXMD Archive File Editor Tool** (Nexus Mods #18), the Java editor this project grew from. The original tool made editing `Game.layer.1.all.archive` easier and established the starting implementation used for this expanded editor.
+**LightPower1** — creator of the original **DXMD Archive File Editor Tool** (Nexus Mods #18), whose Java editor established the starting implementation this project grew from.
 
-Special thanks to **MohamedASalama** and **Grognougnou** for their work on Deus Ex: Mankind Divided archive-file editing. They were also explicitly credited by the original DXMD Archive File Editor Tool author for their archive-editing work.
+Special thanks to **MohamedASalama** and **Grognougnou** for their Deus Ex: Mankind Divided archive-editing work; they were also credited by the original DXMD Archive File Editor Tool author.
 
-## Community research references
-
-A large part of the field mapping has been helped by controlled comparisons against community-created DXMD archive mods and their documentation. Reference material used during research has included mods such as Hardcore Revival, Adam 2.0/3.0, Tweaks, Master Inventory, I Need The Edge, IPOAO, Silence To The Guns, Micro Assembler Overheat Fix, Icarus Reflexes, Mankind Redefined, No Health Regen, More Energy Regeneration, and Inventory Stacking.
-
-Those mods remain the work of their respective authors. DXMD Archive Editor Pro uses research observations and byte-level comparisons; it does not redistribute the original game archives.
+Referenced community mods remain the work of their respective authors. DXMD Archive Editor Pro uses research observations and byte-level comparisons and does not redistribute original game archives.
 
 ## Disclaimer
 
-DXMD Archive Editor Pro is a community tool and is not affiliated with or endorsed by Eidos-Montréal, Square Enix, or the authors of the referenced mods.
-
-Editing game archives can break a game installation or save data. Keep backups and use research fields carefully.
+DXMD Archive Editor Pro is a community tool and is not affiliated with or endorsed by Eidos-Montréal or Square Enix. Editing game archives can break an installation or save data. Keep backups when testing changes, especially newly identified or inventory-dimension fields.
