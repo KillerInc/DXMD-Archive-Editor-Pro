@@ -1,73 +1,52 @@
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 
-public class BaseResearchProfiles {
-    public static class Field {
-        long offset; String category, label; String identifiedAs=""; byte[] original, current;
-        LinkedHashMap<String,byte[]> references=new LinkedHashMap<>();
-        Field(long o,String c,String l,byte[] orig){offset=o;category=c;label=l;original=orig;current=orig.clone();}
-        byte[] reference(String name){return references.get(name);}
+public final class BaseResearchProfiles {
+    public static final class Field {
+        long offset; String category; String label; String identifiedAs = ""; byte[] original; byte[] current;
+        final LinkedHashMap<String, byte[]> references = new LinkedHashMap<String, byte[]>();
+        Field(long offset, String category, String label, byte[] original) {
+            this.offset=offset; this.category=category; this.label=label; this.original=original; this.current=original.clone();
+        }
+        byte[] reference(String name) { return references.get(name); }
     }
-    public static class Profile {
-        String name; long size; ArrayList<Field> fields=new ArrayList<>(); ArrayList<String> referenceNames=new ArrayList<>();
-        Profile(String n,long s){name=n;size=s;}
+    public static final class Profile {
+        String name; long size; final ArrayList<Field> fields=new ArrayList<Field>(); final ArrayList<String> referenceNames=new ArrayList<String>();
+        Profile(String name,long size){this.name=name;this.size=size;}
     }
     private static Profile profile;
-    static { try { load(); } catch(Exception e) { throw new RuntimeException(e); } }
+    static { try { load(); } catch(Exception e) { throw new ExceptionInInitializerError(e); } }
+    private BaseResearchProfiles() {}
 
     private static void load() throws Exception {
-        try(BufferedReader br=CompressedResource.openParts(BaseResearchProfiles.class,
-                "/base_research.part01.b64",
-                "/base_research.part02.b64",
-                "/base_research.tail01.b64",
-                "/base_research.tail02.b64",
-                "/base_research.tail03.b64",
-                "/base_research.tail04.b64",
-                "/base_research.tail05.b64",
-                "/base_research.tail06.b64",
-                "/base_research.tail07.b64",
-                "/base_research.tail08.b64",
-                "/base_research.tail09.b64")) {
+        try (BufferedReader reader=CompressedResource.open(BaseResearchProfiles.class,"/base_research.tsv.gz.b64")) {
             String line;
-            while((line=br.readLine())!=null) parseBaseLine(line);
-        }
-        applyPatch("/base_research_v069_patch.tsv.gz.b64");
-    }
-
-    private static void parseBaseLine(String line) {
-        if(line.isEmpty()||line.startsWith("#")) return;
-        String[] x=line.split("\\t",-1);
-        if(x[0].equals("PROFILE")) profile=new Profile(x[1],Long.parseLong(x[2]));
-        else if(x[0].equals("REFERENCES")){ for(int i=1;i<x.length;i++) profile.referenceNames.add(x[i]); }
-        else if(x[0].equals("FIELD")) profile.fields.add(parseField(x));
-    }
-
-    private static Field parseField(String[] x) {
-        long off=Long.parseLong(x[1]); String cat=x[2], label=x[3]; byte[] orig=fromHex(x[4]);
-        Field f=new Field(off,cat,label,orig);
-        for(int i=0;i<profile.referenceNames.size();i++) f.references.put(profile.referenceNames.get(i),fromHex(x[5+i]));
-        return f;
-    }
-
-    private static void applyPatch(String resource) throws Exception {
-        try(BufferedReader br=CompressedResource.open(BaseResearchProfiles.class,resource)) {
-            String line;
-            while((line=br.readLine())!=null) {
+            while((line=reader.readLine())!=null){
                 if(line.isEmpty()||line.startsWith("#")) continue;
-                String[] x=line.split("\\t",-1);
-                if(x[0].equals("REMOVED")) {
-                    if(x.length < 2 || x[1].isEmpty()) continue;
-                    HashSet<String> remove=new HashSet<>(Arrays.asList(x[1].split(",")));
-                    profile.fields.removeIf(f -> remove.contains(f.offset+":"+f.original.length));
-                } else if(x[0].equals("FIELD")) {
-                    profile.fields.add(parseField(x));
-                }
+                String[] parts=line.split("\\t",-1);
+                if(parts[0].equals("PROFILE")) profile=new Profile(parts[1],Long.parseLong(parts[2]));
+                else if(parts[0].equals("REFERENCES")) { requireProfile(); for(int i=1;i<parts.length;i++) profile.referenceNames.add(parts[i]); }
+                else if(parts[0].equals("FIELD")) { requireProfile(); profile.fields.add(parseField(parts)); }
             }
         }
-        profile.fields.sort(Comparator.comparingLong(f -> f.offset));
+        if(profile==null) throw new IllegalStateException("Base field profile is empty.");
     }
-
-    static byte[] fromHex(String s){byte[] b=new byte[s.length()/2];for(int i=0;i<b.length;i++)b[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);return b;}
+    private static Field parseField(String[] parts){
+        int expected=5+profile.referenceNames.size();
+        if(parts.length<expected) throw new IllegalArgumentException("Malformed Base Fields row at offset "+(parts.length>1?parts[1]:"unknown"));
+        Field field=new Field(Long.parseLong(parts[1]),parts[2],parts[3],fromHex(parts[4]));
+        for(int i=0;i<profile.referenceNames.size();i++) field.references.put(profile.referenceNames.get(i),fromHex(parts[5+i]));
+        return field;
+    }
+    private static void requireProfile(){if(profile==null)throw new IllegalStateException("PROFILE record must appear before field data.");}
+    static byte[] fromHex(String value){
+        if((value.length()&1)!=0)throw new IllegalArgumentException("Odd-length hex value.");
+        byte[] bytes=new byte[value.length()/2];
+        for(int i=0;i<bytes.length;i++)bytes[i]=(byte)Integer.parseInt(value.substring(i*2,i*2+2),16);
+        return bytes;
+    }
     public static Profile get(){return profile;}
     public static java.util.List<String> referenceNames(){return Collections.unmodifiableList(profile.referenceNames);}
 }
