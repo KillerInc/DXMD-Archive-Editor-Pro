@@ -4,7 +4,7 @@ A Java/Swing archive-value editor and research tool for **Deus Ex: Mankind Divid
 
 DXMD Archive Editor Pro is built around a simple goal: make known gameplay values easy to edit while also providing a research view for discovering and documenting additional values inside the game's `.archive` files.
 
-> **Current version:** v0.6.7  
+> **Current version:** v0.6.8  
 > **Runtime:** Java 11 or newer  
 > **Primary platform:** Windows
 
@@ -237,7 +237,7 @@ Long term, the goal is to replace as many fragile fixed offsets as practical wit
 With Java 11 or newer installed:
 
 ```text
-java -jar DXMD-Archive-Editor-Pro-v0.6.7.jar
+java -jar DXMD-Archive-Editor-Pro-v0.6.8.jar
 ```
 
 On Windows you can normally double-click the JAR if `.jar` files are associated with Java.
@@ -265,7 +265,7 @@ javac --release 11
 and place the finished JAR in:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.6.7.jar
+dist/DXMD-Archive-Editor-Pro-v0.6.8.jar
 ```
 
 ## Project layout
@@ -289,9 +289,9 @@ build.sh                Unix-like build script
 
 ## Credits
 
-**LightPower1** — creator of the original **DXMD Archive File Editor Tool** (Nexus Mods #18), the Java editor this project grew from. The original tool made editing `Game.layer.1.all.archive` easier and established the starting implementation used for this expanded editor. citeturn203491view0
+**LightPower1** — creator of the original **DXMD Archive File Editor Tool** (Nexus Mods #18), the Java editor this project grew from. The original tool made editing `Game.layer.1.all.archive` easier and established the starting implementation used for this expanded editor.
 
-Special thanks to **MohamedASalama** and **Grognougnou** for their work on Deus Ex: Mankind Divided archive-file editing. They were also explicitly credited by the original DXMD Archive File Editor Tool author for their archive-editing work. citeturn203491view0
+Special thanks to **MohamedASalama** and **Grognougnou** for their work on Deus Ex: Mankind Divided archive-file editing. They were also explicitly credited by the original DXMD Archive File Editor Tool author for their archive-editing work.
 
 ## Community research references
 
