@@ -74,9 +74,14 @@ public class DLCEditorPanel extends JPanel {
             for(int i=0;i<3;i++){
                 compareBoxes[i]=new JComboBox<>();compareBoxes[i].addItem("(None)");for(String n:refs)compareBoxes[i].addItem(n);
                 if(i<refs.size())compareBoxes[i].setSelectedItem(refs.get(i));
-                compareBoxes[i].addActionListener(e->{model.fireTableStructureChanged();configureTable();});
+                compareBoxes[i].addActionListener(e->refreshComparisonColumns());
                 compareRow.add(compareBoxes[i]);
             }
+            // JTable is created before the comparison boxes are populated, so its initial
+            // TableColumnModel only contains the six fixed columns. Rebuild the structure
+            // once the default comparison selections exist so comparison cells are visible
+            // immediately instead of requiring the user to re-select a profile.
+            refreshComparisonColumns();
             top.add(compareRow);
 
             JPanel r2=new JPanel(new FlowLayout(FlowLayout.LEFT,6,2));
@@ -92,6 +97,10 @@ public class DLCEditorPanel extends JPanel {
         }
         java.util.List<String> selectedComparisons(){ArrayList<String> out=new ArrayList<>();for(JComboBox<String> b:compareBoxes){if(b==null)continue;String n=(String)b.getSelectedItem();if(n!=null&&!n.equals("(None)")&&!out.contains(n))out.add(n);}return out;}
         byte[] referenceBytes(DLCProfiles.Field f,String n){return DLCReferenceProfiles.get(profileName,n,f.offset,f);}
+        void refreshComparisonColumns(){
+            model.fireTableStructureChanged();
+            configureTable();
+        }
         void configureTable(){table.setDefaultRenderer(Object.class,new GroupAwareRenderer());autoSizeColumns();}
         void loadSelected(){try{if(selectedFile.length()!=profile.size)throw new IOException("Unexpected file size. Expected "+profile.size+" bytes, got "+selectedFile.length());try(RandomAccessFile raf=new RandomAccessFile(selectedFile,"r")){for(DLCProfiles.Field f:profile.fields){raf.seek(f.offset);byte[] b=new byte[f.original.length];raf.readFully(b);f.current=b;}}model.fireTableDataChanged();configureTable();packStatus.setText("Loaded "+profile.fields.size()+" editable regions. Identity: "+BackupManager.identify(selectedFile)+(BackupManager.hasBackup(selectedFile)?" | .bak available":""));}catch(Exception ex){JOptionPane.showMessageDialog(DLCEditorPanel.this,ex.getMessage(),"Load error",JOptionPane.ERROR_MESSAGE);}}
         void applyChanges(){
