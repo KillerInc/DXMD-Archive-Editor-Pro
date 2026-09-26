@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.6.10  
+> **Current version:** v0.6.11  
 > **Runtime:** Java 11 or newer  
 > **Primary platform:** Windows
 
@@ -28,21 +28,21 @@ DLC/runtime/DLCPackTactical.layer.0.all.archive
 
 Select `DXMD.exe` and the editor resolves the expected base/DLC structure automatically. Startup detection only walks upward through the application path and validates the DXMD directory layout; it does not scan arbitrary nearby folders.
 
-## v0.6.10 tab layout
+## v0.6.11 tab layout
 
-Confirmed base-game editing is now organized by purpose instead of one large Base Game tab:
+Confirmed base-game editing is organized by purpose instead of one large Base Game tab:
 
 - **Weapon Stats** — confirmed weapon and ammunition controls, currently including mapped magazine capacities and ammunition stack sizes.
 - **Player Stats** — energy regeneration, Biocell energy gain, takedown energy cost, and mapped experimental-augmentation behavior.
 - **Inventory Stats** — confirmed item dimensions plus non-ammunition inventory stacks.
 - **Economy & Crafting** — confirmed shop prices and Weapon Parts crafting costs.
 - **XP Rewards** — all confirmed XP/reward editing in one place: hacking, passwords/keycodes, objectives, stealth, remote hacking, exploration, social/CASIE, combat and mechanical-target rewards.
-- **Base Fields** — the full base-game diagnostic/research table. This replaces the old Base Research name.
+- **Base Fields** — the full base-game diagnostic/research table.
 - **DLC Fields** — installed DLC research/edit tabs.
 
-**Base Fields** and **DLC Fields** are intentionally the last two top-level tabs. The old **Base Game** tab has been removed after its confirmed edits were assigned to normal categories.
+**Base Fields** and **DLC Fields** are intentionally the last two top-level tabs. The old **Base Game** tab was removed after its confirmed edits were assigned to normal categories.
 
-The previous runtime **Weapon Reference** tab has also been removed. DXMD weapon wiki pages, damage-testing material and supplied weapon-stat tables are used by the project as research evidence for identifying more archive fields, not as end-user application UI.
+The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki pages, damage-testing material and supplied weapon-stat tables are used by the project as research evidence for identifying more archive fields, not as end-user application UI.
 
 ## Normal edit behavior
 
@@ -76,7 +76,7 @@ DXMD-specific wiki information is treated as strong high-level evidence and is c
 The table includes:
 
 - Attribute Name
-- nearby/internal context
+- Nearby context / field
 - editable User ID
 - editable Current Decimal
 - Current Hex
@@ -84,6 +84,19 @@ The table includes:
 - up to three selected comparison profiles
 
 Known mappings remain visible in Base Fields for verification, but normal editing of those values is organized in the categorized tabs above.
+
+### Archive-order and context audit
+
+v0.6.11 reworked the context presentation after auditing the Base Fields list against the clean base archive.
+
+- Field ranges are sorted by physical archive offset and validated as unique/non-overlapping before the table is shown.
+- Base Fields column sorting is disabled so the research list stays in physical archive order. Filtering hides rows but does not reorder them.
+- The **Nearby context / field** column is now derived conservatively from readable archive identifiers instead of treating every nearest string as an exact field name.
+- Artificial duplicate suffixes such as `FIRE_PATTERN_01 #2` / `#3` are no longer presented as separate identities. Rows in the same nearby structure can share `FIRE_PATTERN_01` or a broader identifier-block span.
+- Dense structures such as XP/reward records use verified internal archive names where mappings are known; uncertain rows remain contextual rather than being promoted to Known.
+- If the archive does not provide a trustworthy readable identifier near a research row, the UI says so rather than displaying random printable data as a name.
+
+The v0.6.9 decoded XP/reward overlay remains active in Base Fields. v0.6.11 explicitly restores and validates this loader path after it was accidentally omitted during the v0.6.10 source reorganization.
 
 Comparison profiles currently include Hardcore Revival Normal/Optional, Adam 2.0, Adam 3.0, Tweaks, Master Inventory, No Health Regen variants, More Energy Regeneration Half/Full and Inventory Stacking.
 
@@ -131,7 +144,7 @@ Linux/macOS:
 The source targets Java 11 with `javac --release 11`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.6.10.jar
+dist/DXMD-Archive-Editor-Pro-v0.6.11.jar
 ```
 
 ## Credits
