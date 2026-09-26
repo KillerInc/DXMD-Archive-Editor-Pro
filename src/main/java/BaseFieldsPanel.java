@@ -17,6 +17,7 @@ public class BaseFieldsPanel extends JPanel {
     private final JTable table=new JTable(model);
     private final TableRowSorter<ResearchTableModel> sorter=new TableRowSorter<>(model);
     private File selectedFile;
+    private String[] nearbyContexts=new String[0];
 
     public BaseFieldsPanel(){
         setLayout(new BorderLayout(8,8));
@@ -42,11 +43,12 @@ public class BaseFieldsPanel extends JPanel {
         JButton restoreOriginal=new JButton("Restore editor fields"); JButton restoreBak=new JButton("Restore .bak"); JButton apply=new JButton("Apply");
         JButton saveIds=new JButton("Save Identifications..."); JButton loadIds=new JButton("Load Identifications...");
         row2.add(new JLabel("Filter:")); row2.add(filterField); row2.add(original); row2.add(useCompare); row2.add(reload); row2.add(saveIds); row2.add(loadIds); row2.add(restoreOriginal); row2.add(restoreBak); row2.add(apply); top.add(row2);
-        top.add(new JLabel("Original is always shown. Choose up to three reference mods for side-by-side comparison; offsets stay hidden and archive order is preserved."));
+        top.add(new JLabel("Original is always shown. Nearby context is derived conservatively from archive identifiers; rows are locked to physical archive order."));
         top.add(makeLegend());
         add(top,BorderLayout.NORTH);
 
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF); table.setRowHeight(Math.max(table.getRowHeight(),22)); table.setRowSorter(sorter); table.setDefaultRenderer(Object.class,new GroupRenderer());
+        table.getTableHeader().setToolTipText("Base Fields remains in physical archive order. Column sorting is disabled; filtering does not reorder rows.");
         add(new JScrollPane(table),BorderLayout.CENTER); add(status,BorderLayout.SOUTH); configureTable();
 
         choose.addActionListener(e->selectFile()); original.addActionListener(e->{model.useOriginal();autoSizeColumns();});
@@ -81,14 +83,36 @@ public class BaseFieldsPanel extends JPanel {
         }
         return out;
     }
-    private void configureTable(){ table.setDefaultRenderer(Object.class,new GroupRenderer()); autoSizeColumns(); }
+
+    private void configureTable(){
+        table.setDefaultRenderer(Object.class,new GroupRenderer());
+        sorter.setSortKeys(Collections.emptyList());
+        for(int c=0;c<model.getColumnCount();c++) sorter.setSortable(c,false);
+        autoSizeColumns();
+    }
     public void loadArchive(File f){selectedFile=f;fileField.setText(f==null?"":f.getAbsolutePath());loadSelected();}
-    public void clearArchive(String msg){selectedFile=null;fileField.setText("");model.setProfile(null);status.setText(msg);}
+    public void clearArchive(String msg){selectedFile=null;fileField.setText("");nearbyContexts=new String[0];model.setProfile(null);status.setText(msg);}
     public File getSelectedFile(){return selectedFile;}
 
     private void selectFile(){JFileChooser fc=new JFileChooser();fc.setDialogTitle("Select DXMD.exe or Game.layer.1.all.archive");fc.setFileSelectionMode(JFileChooser.FILES_ONLY);fc.setAcceptAllFileFilterUsed(false);fc.setFileFilter(new FileNameExtensionFilter("DXMD executable / archives (*.exe, *.archive)","exe","archive"));if(fc.showOpenDialog(this)==JFileChooser.APPROVE_OPTION)Launcher.openGameOrArchive(fc.getSelectedFile(),this);}
     private void loadSelected(){
-        if(selectedFile==null)return;try{BaseResearchProfiles.Profile p=BaseResearchProfiles.get();if(!selectedFile.getName().equalsIgnoreCase(p.name))throw new IOException("Expected "+p.name+".");if(selectedFile.length()!=p.size)throw new IOException("Unexpected file size. Expected "+p.size+" bytes, got "+selectedFile.length()+".");try(RandomAccessFile raf=new RandomAccessFile(selectedFile,"r")){for(BaseResearchProfiles.Field f:p.fields){raf.seek(f.offset);byte[] b=new byte[f.original.length];raf.readFully(b);f.current=b;}}model.setProfile(p);configureTable();status.setText("Loaded "+p.fields.size()+" base field records. Identity: "+BackupManager.identify(selectedFile)+(BackupManager.hasBackup(selectedFile)?" | .bak available":""));}catch(Exception ex){model.setProfile(null);JOptionPane.showMessageDialog(this,ex.getMessage(),"Load error",JOptionPane.ERROR_MESSAGE);}}
+        if(selectedFile==null)return;
+        try{
+            BaseResearchProfiles.Profile p=BaseResearchProfiles.get();
+            if(!selectedFile.getName().equalsIgnoreCase(p.name))throw new IOException("Expected "+p.name+".");
+            if(selectedFile.length()!=p.size)throw new IOException("Unexpected file size. Expected "+p.size+" bytes, got "+selectedFile.length()+".");
+            try(RandomAccessFile raf=new RandomAccessFile(selectedFile,"r")){
+                for(BaseResearchProfiles.Field f:p.fields){raf.seek(f.offset);byte[] b=new byte[f.original.length];raf.readFully(b);f.current=b;}
+            }
+            try{nearbyContexts=ArchiveContextResolver.resolve(selectedFile,p.fields);}
+            catch(Exception contextError){
+                nearbyContexts=new String[p.fields.size()];
+                for(int i=0;i<p.fields.size();i++)nearbyContexts[i]=ArchiveContextResolver.fallback(p.fields.get(i));
+            }
+            model.setProfile(p);configureTable();
+            status.setText("Loaded "+p.fields.size()+" base field records in archive order. Context labels were re-evaluated from nearby archive identifiers. Identity: "+BackupManager.identify(selectedFile)+(BackupManager.hasBackup(selectedFile)?" | .bak available":""));
+        }catch(Exception ex){nearbyContexts=new String[0];model.setProfile(null);JOptionPane.showMessageDialog(this,ex.getMessage(),"Load error",JOptionPane.ERROR_MESSAGE);}
+    }
     private void applyChanges(){
         if(selectedFile==null||model.profile==null){status.setText("No base archive loaded.");return;}
         if(table.isEditing())table.getCellEditor().stopCellEditing();
@@ -112,8 +136,20 @@ public class BaseFieldsPanel extends JPanel {
         return f.category!=null&&f.category.startsWith("KNOWN")&&(l.contains(" WIDTH")||l.contains(" HEIGHT"));
     }
 
+    private String nearbyContext(int row){
+        if(row>=0&&row<nearbyContexts.length&&nearbyContexts[row]!=null&&!nearbyContexts[row].trim().isEmpty())return nearbyContexts[row];
+        if(model.profile!=null&&row>=0&&row<model.profile.fields.size())return ArchiveContextResolver.fallback(model.profile.fields.get(row));
+        return "";
+    }
+
     private String nearbySpecificName(int row){
         if(model.profile==null)return null;
+        String resolved=nearbyContext(row);
+        if(resolved!=null&&!resolved.isEmpty()&&!resolved.equals("No nearby readable identifier")&&!resolved.contains(" … ")&&!resolved.contains(" → ")){
+            String u=resolved.toUpperCase(Locale.ROOT);
+            boolean useful=u.contains("MM")||u.contains("GAUGE")||u.contains("GRENADE")||u.contains("RIFLE")||u.contains("PISTOL")||u.contains("SHOTGUN")||u.contains("BIOCELL")||u.contains("PAINKILLER")||u.contains("HYPOSTIM")||u.contains("PRAXIS")||u.contains("WEAPON_PARTS")||u.contains("MULTITOOL");
+            if(useful)return resolved;
+        }
         BaseResearchProfiles.Field f=model.profile.fields.get(row);
         String best=null; long bestDist=Long.MAX_VALUE;
         for(int i=Math.max(0,row-5);i<=Math.min(model.profile.fields.size()-1,row+5);i++){
@@ -145,7 +181,7 @@ public class BaseFieldsPanel extends JPanel {
         return "Unidentified";
     }
 
-    private void autoSizeColumns(){if(table.getColumnCount()==0)return;FontMetrics fm=table.getFontMetrics(table.getFont());for(int c=0;c<table.getColumnCount();c++){TableColumn col=table.getColumnModel().getColumn(c);int w=fm.stringWidth(table.getColumnName(c))+28;int rows=Math.min(table.getRowCount(),500);for(int r=0;r<rows;r++){Object v=table.getValueAt(r,c);if(v!=null)w=Math.max(w,fm.stringWidth(String.valueOf(v))+24);}int max=(c<=2)?360:190;col.setPreferredWidth(Math.min(max,Math.max(w,85)));}}
+    private void autoSizeColumns(){if(table.getColumnCount()==0)return;FontMetrics fm=table.getFontMetrics(table.getFont());for(int c=0;c<table.getColumnCount();c++){TableColumn col=table.getColumnModel().getColumn(c);int w=fm.stringWidth(table.getColumnName(c))+28;int rows=Math.min(table.getRowCount(),500);for(int r=0;r<rows;r++){Object v=table.getValueAt(r,c);if(v!=null)w=Math.max(w,fm.stringWidth(String.valueOf(v))+24);}int max=(c<=2)?390:190;col.setPreferredWidth(Math.min(max,Math.max(w,85)));}}
 
     class GroupRenderer extends JLabel implements TableCellRenderer{
         private final Color matchBg=new Color(0,80,0);
@@ -188,7 +224,7 @@ public class BaseFieldsPanel extends JPanel {
         public int getRowCount(){return profile==null?0:profile.fields.size();}
         public int getColumnCount(){return 6+selectedComparisons().size();}
         public String getColumnName(int c){if(c==0)return "Attribute Name";if(c==1)return "Nearby context / field";if(c==2)return "User ID";if(c==3)return "Current decimal";if(c==4)return "Current hex";if(c==5)return "Original hex";return selectedComparisons().get(c-6)+" hex";}
-        public Object getValueAt(int r,int c){BaseResearchProfiles.Field f=profile.fields.get(r);if(c==0)return attributeName(r);if(c==1)return f.label;if(c==2)return f.identifiedAs;if(c==3)return decimal(f.current);if(c==4)return hex(f.current);if(c==5)return hex(f.original);String n=selectedComparisons().get(c-6);return hex(f.reference(n));}
+        public Object getValueAt(int r,int c){BaseResearchProfiles.Field f=profile.fields.get(r);if(c==0)return attributeName(r);if(c==1)return nearbyContext(r);if(c==2)return f.identifiedAs;if(c==3)return decimal(f.current);if(c==4)return hex(f.current);if(c==5)return hex(f.original);String n=selectedComparisons().get(c-6);return hex(f.reference(n));}
         public boolean isCellEditable(int r,int c){return c==2||c==3;}
         public void setValueAt(Object v,int r,int c){BaseResearchProfiles.Field f=profile.fields.get(r);try{if(c==2)f.identifiedAs=String.valueOf(v).trim();else if(c==3)f.current=parseDecimal(String.valueOf(v),f.original.length);else return;}catch(Exception ex){JOptionPane.showMessageDialog(BaseFieldsPanel.this,ex.getMessage(),"Invalid value",JOptionPane.ERROR_MESSAGE);}fireTableRowsUpdated(r,r);}
         void useOriginal(){if(profile!=null){for(BaseResearchProfiles.Field f:profile.fields)f.current=f.original.clone();fireTableDataChanged();}}
