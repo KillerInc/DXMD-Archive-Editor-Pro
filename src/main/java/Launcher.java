@@ -7,13 +7,14 @@ public class Launcher {
     private static MainGUI mainWindow;
     private static DLCEditorPanel dlcPanel;
     private static BaseResearchPanel baseResearchPanel;
+    private static XPRewardPanel xpRewardPanel;
     private static JLabel installStatus;
     private static JButton restoreOriginalsButton;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
-            JFrame jf=new JFrame("DXMD Archive Editor Pro v0.6.8");
+            JFrame jf=new JFrame("DXMD Archive Editor Pro v0.6.9");
             jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             jf.setLayout(new BorderLayout(6,6));
 
@@ -32,9 +33,11 @@ public class Launcher {
             mainWindow=new MainGUI();
             dlcPanel=new DLCEditorPanel();
             baseResearchPanel=new BaseResearchPanel();
+            xpRewardPanel=new XPRewardPanel();
             JTabbedPane tabs=new JTabbedPane();
             tabs.addTab("Base Game", mainWindow);
             tabs.addTab("Base Research", baseResearchPanel);
+            tabs.addTab("XP Rewards", xpRewardPanel);
             tabs.addTab("DLC Mod Fields", dlcPanel);
             jf.add(tabs, BorderLayout.CENTER);
 
@@ -104,6 +107,7 @@ public class Launcher {
                 if (name.equalsIgnoreCase("Game.layer.1.all.archive")) {
                     mainWindow.loadArchive(selected);
                     baseResearchPanel.loadArchive(selected);
+                    xpRewardPanel.loadArchive(selected);
                     installStatus.setText("Manual base archive: " + selected.getAbsolutePath());
                     return;
                 }
@@ -137,9 +141,11 @@ public class Launcher {
         if (r.baseArchive != null) {
             mainWindow.loadArchive(r.baseArchive);
             baseResearchPanel.loadArchive(r.baseArchive);
+            xpRewardPanel.loadArchive(r.baseArchive);
         } else {
             mainWindow.clearArchive("Base archive not found in the validated game runtime folder.");
             baseResearchPanel.clearArchive("Base archive not found.");
+            xpRewardPanel.clearArchive("Base archive not found.");
         }
         dlcPanel.setDetectedArchives(r.dlcArchives, r.gameRoot);
         if (restoreOriginalsButton != null) restoreOriginalsButton.setEnabled(r.baseArchive != null && r.baseArchive.isFile());
@@ -175,6 +181,7 @@ public class Launcher {
         if (archive == null) return;
         if (mainWindow != null) mainWindow.loadArchive(archive);
         if (baseResearchPanel != null) baseResearchPanel.loadArchive(archive);
+        if (xpRewardPanel != null) xpRewardPanel.loadArchive(archive);
     }
 
     public static void showDoneMessage(){ if(mainWindow!=null) mainWindow.showDoneMessage(); }
