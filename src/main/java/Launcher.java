@@ -13,7 +13,7 @@ public class Launcher {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
-            JFrame jf=new JFrame("DXMD Archive Editor Pro v0.6.7");
+            JFrame jf=new JFrame("DXMD Archive Editor Pro v0.6.8");
             jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             jf.setLayout(new BorderLayout(6,6));
 
