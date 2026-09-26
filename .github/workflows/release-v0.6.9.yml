@@ -1,0 +1,39 @@
+name: Release v0.6.9
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.6.9.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Build JAR
+        run: bash build.sh
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG='v0.6.9'
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.6.9.jar'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title 'DXMD Archive Editor Pro v0.6.9' --notes-file RELEASE_NOTES.md
+            gh release upload "$TAG" "$JAR" --clobber
+          else
+            gh release create "$TAG" "$JAR" --target main --title 'DXMD Archive Editor Pro v0.6.9' --notes-file RELEASE_NOTES.md
+          fi
