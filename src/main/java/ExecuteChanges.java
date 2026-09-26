@@ -5,18 +5,13 @@ import java.util.ArrayList;
 
 import options.Option;
 
-public class ExecuteChanges
-{
-    public static void run(File gameFile, ArrayList<Option> optionData) throws IOException
-    {
-        try (RandomAccessFile accessGameFile = new RandomAccessFile(gameFile, "rw"))
-        {
-            for (Option option : optionData)
-            {
-                option.makeChanges(accessGameFile);
-            }
-        }
+/** Applies only the option objects supplied by the calling editor panel. */
+public final class ExecuteChanges {
+    private ExecuteChanges() {}
 
-        Launcher.showDoneMessage();
+    public static void run(File gameFile, ArrayList<Option> optionData) throws IOException {
+        try (RandomAccessFile accessGameFile = new RandomAccessFile(gameFile, "rw")) {
+            for (Option option : optionData) option.makeChanges(accessGameFile);
+        }
     }
 }
