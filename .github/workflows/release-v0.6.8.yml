@@ -1,3 +1,4 @@
+# One-shot release workflow for v0.6.8. Keep for release history.
 name: Release v0.6.8
 
 on:
