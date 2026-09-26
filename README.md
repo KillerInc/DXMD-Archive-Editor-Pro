@@ -289,7 +289,9 @@ build.sh                Unix-like build script
 
 ## Credits
 
-Special thanks to **MohamedASalama** and **Grognougnou** for their work on Deus Ex: Mankind Divided archive-file editing and for helping establish the techniques and knowledge that make deeper archive research possible.
+**LightPower1** — creator of the original **DXMD Archive File Editor Tool** (Nexus Mods #18), the Java editor this project grew from. The original tool made editing `Game.layer.1.all.archive` easier and established the starting implementation used for this expanded editor. citeturn203491view0
+
+Special thanks to **MohamedASalama** and **Grognougnou** for their work on Deus Ex: Mankind Divided archive-file editing. They were also explicitly credited by the original DXMD Archive File Editor Tool author for their archive-editing work. citeturn203491view0
 
 ## Community research references
 
