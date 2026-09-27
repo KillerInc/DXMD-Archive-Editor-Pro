@@ -185,12 +185,12 @@ public class BaseFieldsPanel extends JPanel {
             boolean danger=assessment!=null&&assessment.saveRisk;
             setToolTipText(assessment==null?null:assessment.evidence);
             Color stateColor=modified?Color.RED:(danger?new Color(180,90,0):(known?new Color(0,128,0):(strong?new Color(70,100,180):null)));
-            boolean hexColumn=col>=4;
+            boolean hexColumn=col>=5;
             if(hexColumn&&f!=null){
                 byte[] shown;
-                if(col==4) shown=f.current;
-                else if(col==5) shown=f.original;
-                else shown=f.reference(selectedComparisons().get(col-6));
+                if(col==5) shown=f.current;
+                else if(col==6) shown=f.original;
+                else shown=f.reference(selectedComparisons().get(col-7));
                 boolean matches=shown!=null&&Arrays.equals(shown,f.original);
                 setBackground(matches?matchBg:differentBg);
                 setForeground(matches?Color.WHITE:Color.BLACK);
@@ -212,11 +212,11 @@ public class BaseFieldsPanel extends JPanel {
         BaseResearchProfiles.Profile profile;
         void setProfile(BaseResearchProfiles.Profile p){profile=p;fireTableStructureChanged();}
         public int getRowCount(){return profile==null?0:profile.fields.size();}
-        public int getColumnCount(){return 6+selectedComparisons().size();}
-        public String getColumnName(int c){if(c==0)return "Attribute Name";if(c==1)return "Nearby context / field";if(c==2)return "User ID";if(c==3)return "Current decimal";if(c==4)return "Current hex";if(c==5)return "Original hex";return selectedComparisons().get(c-6)+" hex";}
-        public Object getValueAt(int r,int c){BaseResearchProfiles.Field f=profile.fields.get(r);if(c==0)return attributeName(r);if(c==1)return nearbyContext(r);if(c==2)return f.identifiedAs;if(c==3)return decimal(f.current);if(c==4)return hex(f.current);if(c==5)return hex(f.original);String n=selectedComparisons().get(c-6);return hex(f.reference(n));}
-        public boolean isCellEditable(int r,int c){return c==2||c==3;}
-        public void setValueAt(Object v,int r,int c){BaseResearchProfiles.Field f=profile.fields.get(r);try{if(c==2)f.identifiedAs=String.valueOf(v).trim();else if(c==3)f.current=parseDecimal(String.valueOf(v),f.original.length);else return;}catch(Exception ex){JOptionPane.showMessageDialog(BaseFieldsPanel.this,ex.getMessage(),"Invalid value",JOptionPane.ERROR_MESSAGE);}fireTableRowsUpdated(r,r);}
+        public int getColumnCount(){return 7+selectedComparisons().size();}
+        public String getColumnName(int c){if(c==0)return "Attribute Name";if(c==1)return "Nearby context / field";if(c==2)return "User ID";if(c==3)return "Current decimal";if(c==4)return "Float16 (LE)";if(c==5)return "Current hex";if(c==6)return "Original hex";return selectedComparisons().get(c-7)+" hex";}
+        public Object getValueAt(int r,int c){BaseResearchProfiles.Field f=profile.fields.get(r);if(c==0)return attributeName(r);if(c==1)return nearbyContext(r);if(c==2)return f.identifiedAs;if(c==3)return decimal(f.current);if(c==4)return HalfFloat.formatLE(f.current);if(c==5)return hex(f.current);if(c==6)return hex(f.original);String n=selectedComparisons().get(c-7);return hex(f.reference(n));}
+        public boolean isCellEditable(int r,int c){return c==2||c==3||(c==4&&profile.fields.get(r).original.length==2);}
+        public void setValueAt(Object v,int r,int c){BaseResearchProfiles.Field f=profile.fields.get(r);try{if(c==2)f.identifiedAs=String.valueOf(v).trim();else if(c==3)f.current=parseDecimal(String.valueOf(v),f.original.length);else if(c==4&&f.original.length==2)f.current=HalfFloat.parseLE(String.valueOf(v));else return;}catch(Exception ex){JOptionPane.showMessageDialog(BaseFieldsPanel.this,ex.getMessage(),"Invalid value",JOptionPane.ERROR_MESSAGE);}fireTableRowsUpdated(r,r);}
         void useOriginal(){if(profile!=null){for(BaseResearchProfiles.Field f:profile.fields)f.current=f.original.clone();fireTableDataChanged();}}
         void useReference(String n){if(profile!=null){for(BaseResearchProfiles.Field f:profile.fields){byte[] b=f.reference(n);if(b!=null)f.current=b.clone();}fireTableDataChanged();}}
     }

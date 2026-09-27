@@ -187,9 +187,9 @@ public class DLCEditorPanel extends JPanel {
                 boolean danger=assessment.saveRisk;
                 setToolTipText(assessment.evidence);
                 Color stateColor=modified?Color.RED:(danger?new Color(180,90,0):(known?new Color(0,128,0):(strong?new Color(70,100,180):null)));
-                boolean hexColumn=col>=4;
+                boolean hexColumn=col>=5;
                 if(hexColumn){
-                    byte[] shown;if(col==4)shown=f.current;else if(col==5)shown=f.original;else shown=referenceBytes(f,selectedComparisons().get(col-6));
+                    byte[] shown;if(col==5)shown=f.current;else if(col==6)shown=f.original;else shown=referenceBytes(f,selectedComparisons().get(col-7));
                     boolean matches=shown!=null&&Arrays.equals(shown,f.original);setBackground(matches?matchBg:differentBg);setForeground(matches?Color.WHITE:Color.BLACK);
                 }else if(selected){setBackground(t.getSelectionBackground());setForeground(stateColor!=null?stateColor:t.getSelectionForeground());}
                 else{setBackground(t.getBackground());setForeground(stateColor!=null?stateColor:t.getForeground());}
@@ -202,11 +202,11 @@ public class DLCEditorPanel extends JPanel {
         class PatchTableModel extends AbstractTableModel{
             final DLCProfiles.Profile p;PatchTableModel(DLCProfiles.Profile x){p=x;}
             public int getRowCount(){return p.fields.size();}
-            public int getColumnCount(){return 6+selectedComparisons().size();}
-            public String getColumnName(int c){if(c==0)return "Attribute Name";if(c==1)return "Nearby context / field";if(c==2)return "User ID";if(c==3)return "Current decimal";if(c==4)return "Current hex";if(c==5)return "Original hex";return selectedComparisons().get(c-6)+" hex";}
-            public Object getValueAt(int r,int c){DLCProfiles.Field f=p.fields.get(r);if(c==0)return attributeFor(f);if(c==1)return nearbyContext(r);if(c==2)return f.identifiedAs;if(c==3)return decimal(f.current);if(c==4)return hex(f.current);if(c==5)return hex(f.original);return hex(referenceBytes(f,selectedComparisons().get(c-6)));}
-            public boolean isCellEditable(int r,int c){return c==2||c==3;}
-            public void setValueAt(Object v,int r,int c){DLCProfiles.Field f=p.fields.get(r);try{if(c==2)f.identifiedAs=String.valueOf(v).trim();else if(c==3)f.current=parseDecimal(String.valueOf(v),f.original.length);else return;}catch(Exception ex){JOptionPane.showMessageDialog(DLCEditorPanel.this,ex.getMessage(),"Invalid value",JOptionPane.ERROR_MESSAGE);}fireTableRowsUpdated(r,r);}
+            public int getColumnCount(){return 7+selectedComparisons().size();}
+            public String getColumnName(int c){if(c==0)return "Attribute Name";if(c==1)return "Nearby context / field";if(c==2)return "User ID";if(c==3)return "Current decimal";if(c==4)return "Float16 (LE)";if(c==5)return "Current hex";if(c==6)return "Original hex";return selectedComparisons().get(c-7)+" hex";}
+            public Object getValueAt(int r,int c){DLCProfiles.Field f=p.fields.get(r);if(c==0)return attributeFor(f);if(c==1)return nearbyContext(r);if(c==2)return f.identifiedAs;if(c==3)return decimal(f.current);if(c==4)return HalfFloat.formatLE(f.current);if(c==5)return hex(f.current);if(c==6)return hex(f.original);return hex(referenceBytes(f,selectedComparisons().get(c-7)));}
+            public boolean isCellEditable(int r,int c){return c==2||c==3||(c==4&&p.fields.get(r).original.length==2);}
+            public void setValueAt(Object v,int r,int c){DLCProfiles.Field f=p.fields.get(r);try{if(c==2)f.identifiedAs=String.valueOf(v).trim();else if(c==3)f.current=parseDecimal(String.valueOf(v),f.original.length);else if(c==4&&f.original.length==2)f.current=HalfFloat.parseLE(String.valueOf(v));else return;}catch(Exception ex){JOptionPane.showMessageDialog(DLCEditorPanel.this,ex.getMessage(),"Invalid value",JOptionPane.ERROR_MESSAGE);}fireTableRowsUpdated(r,r);}
             void useOriginal(){for(DLCProfiles.Field f:p.fields)f.current=f.original.clone();fireTableDataChanged();}
             void useReference(String n){for(DLCProfiles.Field f:p.fields){byte[] b=referenceBytes(f,n);if(b!=null)f.current=b.clone();}fireTableDataChanged();}
         }

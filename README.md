@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.6.15  
+> **Current version:** v0.6.16  
 > **Runtime:** Java 11 or newer  
 > **Primary platform:** Windows
 
@@ -126,6 +126,10 @@ The static evidence audit contains **2,553 Base research rows** and **342 DLC re
 
 Across all five DLC packs, only **3 / 342 rows** currently meet the confirmed threshold. Another **47** are strong-suspected from focused or structural comparison evidence. Remaining rows stay suspected or unidentified; archive-derived context may improve their description but never promotes them to confirmed by proximity alone.
 
+## v0.6.16 editable Float16 research view
+
+Base Fields and DLC Fields now include an editable **Float16 (LE)** column immediately beside **Current decimal**. It is enabled only for exact 2-byte fields. The column interprets the two archive bytes as IEEE-754 binary16 in little-endian order; editing it writes the corresponding two-byte half-float representation and immediately updates the decimal/hex views. For example, `2.25` encodes to `80 40`. This is an alternate numeric interpretation for research, not a claim that every 2-byte field is a float.
+
 ## DLC Fields
 
 Installed DLC packs are displayed as individual tabs. Missing packs are normal and are not created by the tool. DLC research views support original/current values, comparison profiles, presets, User ID import/export, backups and restore functions.
@@ -185,7 +189,7 @@ Linux/macOS:
 The source targets Java 11 with `javac --release 11`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.6.15.jar
+dist/DXMD-Archive-Editor-Pro-v0.6.16.jar
 ```
 
 ## Credits

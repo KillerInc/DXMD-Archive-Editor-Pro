@@ -7,5 +7,5 @@ rm -rf "$BUILD"
 mkdir -p "$CLASSES" "$ROOT/dist"
 find "$ROOT/src/main/java" -name '*.java' -print0 | xargs -0 javac --release 11 -encoding UTF-8 -d "$CLASSES"
 cp "$ROOT/src/main/resources/"*.b64 "$CLASSES/"
-jar cfm "$ROOT/dist/DXMD-Archive-Editor-Pro-v0.6.15.jar" "$ROOT/src/main/resources/MANIFEST.MF" -C "$CLASSES" .
-echo "Built: $ROOT/dist/DXMD-Archive-Editor-Pro-v0.6.15.jar"
+jar cfm "$ROOT/dist/DXMD-Archive-Editor-Pro-v0.6.16.jar" "$ROOT/src/main/resources/MANIFEST.MF" -C "$CLASSES" .
+echo "Built: $ROOT/dist/DXMD-Archive-Editor-Pro-v0.6.16.jar"
