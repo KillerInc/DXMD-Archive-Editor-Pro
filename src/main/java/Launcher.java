@@ -13,7 +13,7 @@ public class Launcher {
     private static final LinkedHashMap<String,File> loadedDlcArchives=new LinkedHashMap<>();
 
     private record PendingLoad(GameLocator.Result located, File manualBase, String manualStatus, boolean bootAutoDetected) {}
-    private record LoadingUi(JDialog dialog, JLabel message, JProgressBar bar) {}
+    private record LoadingUi(JDialog dialog, JLabel message, JProgressBar bar, Timer animation) {}
     @FunctionalInterface private interface ProgressSink { void update(int value,String message); }
     @FunctionalInterface private interface LoadResolver { PendingLoad resolve(ProgressSink progress) throws Exception; }
 
@@ -21,7 +21,7 @@ public class Launcher {
         SwingUtilities.invokeLater(() -> {
             try {
                 UiTheme.install();
-                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.4");
+                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.5");
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setLayout(new BorderLayout(6, 6));
 
@@ -127,21 +127,37 @@ public class Launcher {
             @Override protected PendingLoad doInBackground() throws Exception {
                 return resolver.resolve((value,message)->{setProgress(Math.max(0,Math.min(100,value)));publish(message);});
             }
-            @Override protected void process(java.util.List<String> chunks){if(!chunks.isEmpty())ui.message.setText(chunks.get(chunks.size()-1));}
+            @Override protected void process(java.util.List<String> chunks){
+                if(!chunks.isEmpty())ui.message.setText(chunks.get(chunks.size()-1));
+            }
             @Override protected void done(){
+                boolean success=false;
                 try{
                     PendingLoad pending=get();
-                    ui.bar.setValue(97);ui.message.setText("Populating editor...");
+                    ui.animation.stop();
+                    ui.bar.setIndeterminate(false);
+                    ui.bar.setValue(96);
+                    ui.bar.setString("Finalizing...");
+                    ui.message.setText("Populating editor...");
                     if(pending.located!=null)applyLocatedGame(pending.located,pending.bootAutoDetected);
                     else if(pending.manualBase!=null){loadBaseArchiveEverywhere(pending.manualBase);researchInspector.setDetectedArchives(pending.manualBase,loadedDlcArchives);installStatus.setText(pending.manualStatus);}
-                    ui.bar.setValue(100);ui.message.setText("Ready");
+                    ui.bar.setValue(100);
+                    ui.bar.setString("Ready");
+                    ui.message.setText("Archive ready");
+                    success=true;
                 }catch(Exception ex){
                     Throwable cause=ex.getCause()==null?ex:ex.getCause();
                     JOptionPane.showMessageDialog(parent,cause.getMessage()==null?cause.toString():cause.getMessage(),"Archive load error",JOptionPane.ERROR_MESSAGE);
-                }finally{ui.dialog.dispose();}
+                }finally{
+                    ui.animation.stop();
+                    if(success){
+                        Timer close=new Timer(180,e->ui.dialog.dispose());
+                        close.setRepeats(false);
+                        close.start();
+                    }else ui.dialog.dispose();
+                }
             }
         };
-        worker.addPropertyChangeListener(e->{if("progress".equals(e.getPropertyName()))ui.bar.setValue((Integer)e.getNewValue());});
         worker.execute();
         ui.dialog.setVisible(true);
     }
@@ -153,11 +169,24 @@ public class Launcher {
         JPanel panel=new JPanel(new BorderLayout(10,10));panel.setBorder(BorderFactory.createEmptyBorder(16,18,16,18));
         JLabel title=new JLabel("Loading Archive");title.setFont(new Font("Segoe UI",Font.BOLD,16));title.setForeground(UiTheme.TEXT);
         JLabel message=new JLabel("Preparing...");message.setForeground(UiTheme.MUTED);
-        JProgressBar bar=new JProgressBar(0,100);bar.setValue(0);bar.setStringPainted(true);bar.setForeground(UiTheme.ACCENT);bar.setBackground(UiTheme.FIELD);bar.setPreferredSize(new Dimension(390,22));
+        JProgressBar bar=new JProgressBar(0,100);
+        bar.setIndeterminate(true);
+        bar.setStringPainted(true);
+        bar.setString("Working");
+        bar.setForeground(UiTheme.ACCENT);
+        bar.setBackground(UiTheme.FIELD);
+        bar.setPreferredSize(new Dimension(390,22));
+        final int[] dots={0};
+        Timer animation=new Timer(260,e->{
+            dots[0]=(dots[0]+1)%4;
+            bar.setString("Working"+".".repeat(dots[0]));
+        });
+        animation.setCoalesce(true);
+        animation.start();
         JPanel labels=new JPanel(new BorderLayout(4,4));labels.add(title,BorderLayout.NORTH);labels.add(message,BorderLayout.SOUTH);
         panel.add(labels,BorderLayout.NORTH);panel.add(bar,BorderLayout.CENTER);
         dialog.setContentPane(panel);dialog.pack();dialog.setResizable(false);dialog.setLocationRelativeTo(parent);UiTheme.apply(dialog);bar.setForeground(UiTheme.ACCENT);bar.setBackground(UiTheme.FIELD);
-        return new LoadingUi(dialog,message,bar);
+        return new LoadingUi(dialog,message,bar,animation);
     }
 
     private static void applyLocatedGame(GameLocator.Result result, boolean bootAutoDetected){
