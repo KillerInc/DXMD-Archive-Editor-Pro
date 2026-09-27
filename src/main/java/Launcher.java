@@ -22,7 +22,7 @@ public class Launcher {
         SwingUtilities.invokeLater(() -> {
             try {
                 UiTheme.install();
-                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.6");
+                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.7");
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setLayout(new BorderLayout(6, 6));
 
@@ -119,7 +119,7 @@ public class Launcher {
         progress.update(48,"Indexing internal resources...");
         progress.update(58,"Scanning readable archive identifiers...");
         ArchiveContextResolver.resolve(base,BaseResearchProfiles.get().fields);
-        progress.update(76,"Loading HeaderLib logical-resource structure...");
+        progress.update(76,"Loading Base + DLC HeaderLib logical-resource structure...");
         LogicalResourceCatalog.prewarm();
         progress.update(88,"Mapping research fields to logical resources...");
     }
