@@ -1,49 +1,45 @@
-# DXMD Archive Editor Pro v0.6.12
+# DXMD Archive Editor Pro v0.6.13
 
-## Base Fields continuity / context audit
+## DLC Fields context audit
 
-This release rechecks how the **Nearby context / field** column is produced and how Base Fields rows are ordered.
+This release applies the Base Fields context-audit approach to all supported DLC research tabs.
 
-- Base Fields rows are explicitly sorted by their physical archive offset and validated during profile loading.
-- Column sorting is disabled in Base Fields so filtering cannot accidentally make the list look out of archive order.
-- The profile validator rejects duplicate/overlapping or out-of-bounds field ranges and mismatched comparison-value lengths.
-- Audited the current Base Fields dataset after the XP overlay: **2,553 field records**, strictly increasing archive order, **0 duplicate offsets** and **0 overlapping field ranges**.
+Previously, the DLC **Context / field** column largely displayed generated profile labels directly. That could make research hints look more authoritative than they really were and could produce misleading identities such as numbered duplicate labels or nearby strings that were never confirmed as exact field names.
 
-## Nearby context improvements
+v0.6.13 changes DLC context handling so the visible context is derived conservatively from the actual loaded DLC archive.
 
-The old context labels were largely inherited from a nearest-string heuristic. That produced misleading repeated suffixes such as `FIRE_PATTERN_01 #2`, `FIRE_PATTERN_01 #3`, long runs of `combat_xp_nonlethal #...`, and similar labels that looked like independently decoded fields when they were only nearby context.
+### What changed
 
-v0.6.12 now derives the visible context conservatively from readable identifiers in the loaded archive:
+- Added a dedicated `DLCArchiveContextResolver` that scans each loaded DLC archive for readable nearby identifiers.
+- **Nearby context / field** now comes from the archive itself rather than simply echoing the generated profile label.
+- Artificial duplicate suffixes such as `FIRE_PATTERN_01 #2` / `#3` are removed from visible context.
+- Hex-like garbage and weak printable strings are rejected as field context.
+- Arbitrary non-raw generated labels are no longer automatically treated as confirmed/green mappings.
+- The old nearest-semantic-field inference was removed. A nearby known weapon-stat label is no longer allowed to spread a suspected identity across unrelated rows within a large byte window.
+- Only explicitly mapped DLC field families receive confirmed treatment.
+- Unknown rows remain **Unidentified** unless the archive provides defensible nearby context; weapon-like context may be shown only as **Suspected**.
+- When no trustworthy identifier exists, the UI reports **No nearby readable identifier** rather than inventing a precise identity.
+- DLC context is recalculated whenever the archive is reloaded.
+- DLC rows remain in physical archive order and column sorting stays disabled.
 
-- Numbered nearest-string suffixes are no longer presented as separate field identities.
-- Repeated values around the same structure share a stable nearby identifier or identifier block instead of artificial `#2/#3/...` numbering.
-- Example: the three research rows near `FIRE_PATTERN_01` show `FIRE_PATTERN_01` as their context rather than three fake numbered variants.
-- For dense structures where many names occur together, the table can show a context span rather than claiming one exact name for every byte.
-- Known DXMD XP/reward mappings use their verified internal archive names for context, including hacking, passwords, social/CASIE, remote hacking, exploration and combat reward families.
-- When no trustworthy readable identifier is nearby, the table says so instead of displaying random printable bytes as a field name.
+Generated DLC profile labels are still retained internally as research hints and for comparison/profile compatibility. This update changes how confidence is presented to the user, not the underlying DLC research offsets or comparison bytes.
 
-This changes the **context presentation**, not the underlying research offsets or comparison bytes.
+## Existing Base Fields audit
 
-## XP overlay / startup repair
+The v0.6.12 Base Fields context and continuity audit remains intact. Base Fields continues to derive nearby context conservatively from the loaded base archive, keep research rows in physical archive order, and avoid artificial numbered nearest-string identities.
 
-During the v0.6.10 source reorganization, the v0.6.9 XP/reward overlay loader call was accidentally dropped. The first v0.6.11 build restored the call, which exposed that the source-tree copy of the compressed overlay resource was incomplete even though the known-good v0.6.9 JAR contained the complete data.
+## Existing editor features retained
 
-v0.6.12 restores the complete known-good overlay resource and keeps the decoded XP/reward records active in Base Fields. The release JAR is built from this corrected resource and is smoke-tested after packaging.
-
-## Existing categorized editor
-
-The normal editing layout remains:
-
-- **Weapon Stats**
-- **Player Stats**
-- **Inventory Stats**
-- **Economy & Crafting**
-- **XP Rewards**
-- **Base Fields**
-- **DLC Fields**
-
-The v0.6.8 DLC Compare initialization fix, backup/restore behavior, explicit-edit tracking and inventory-dimension save warnings remain included.
+- Weapon Stats, Player Stats, Inventory Stats, Economy & Crafting and XP Rewards categorized editing
+- Base Fields and DLC Fields research tables
+- up to three comparison profiles
+- User ID import/export for sharing field identifications
+- automatic `.bak` preservation before writes
+- exact `.bak` restore
+- selective **Restore Editor Fields to Original** behavior that leaves unrelated mod bytes alone
+- inventory-dimension save-risk warnings
+- automatic base-game and installed-DLC detection from `DXMD.exe`
 
 ## Requirements
 
-Java 11 or newer. Keep saves backed up when testing newly identified or inventory-dimension fields.
+Java 11 or newer. Keep saves and game archives backed up when testing newly identified or inventory-dimension fields.
