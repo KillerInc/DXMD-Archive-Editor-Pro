@@ -20,12 +20,19 @@ public class DLCReferenceProfiles {
         }
     }
     public static java.util.List<String> namesFor(String archive){
-        ArrayList<String> out=new ArrayList<>(); out.add("Hardcore");
-        LinkedHashMap<String,HashMap<Long,byte[]>> m=data.get(archive); if(m!=null)out.addAll(m.keySet());
-        return out;
+        LinkedHashSet<String> names=new LinkedHashSet<>();
+        names.add("Hardcore");
+        LinkedHashMap<String,HashMap<Long,byte[]>> m=data.get(archive); if(m!=null)names.addAll(m.keySet());
+        // v0.6.15: expose every deduplicated raw comparison variant supplied for this archive.
+        names.addAll(RawArchiveAuditCatalog.referenceNames(archive));
+        return new ArrayList<>(names);
     }
     public static byte[] get(String archive,String profile,long offset,DLCProfiles.Field baseField){
+        // Preserve the original legacy Hardcore comparison under its historical name.
         if("Hardcore".equals(profile)) return baseField.modded;
+        // Raw OG-vs-mod evidence is authoritative when that exact comparison exists.
+        if(RawArchiveAuditCatalog.hasReference(archive,profile))
+            return RawArchiveAuditCatalog.referenceBytes(archive,profile,offset,baseField.original);
         LinkedHashMap<String,HashMap<Long,byte[]>> a=data.get(archive); if(a==null)return baseField.original;
         HashMap<Long,byte[]> p=a.get(profile); if(p==null)return baseField.original;
         byte[] b=p.get(offset); return b==null?baseField.original:b;
