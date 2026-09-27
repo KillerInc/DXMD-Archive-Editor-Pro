@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.7.2  
+> **Current version:** v0.7.3  
 > **Runtime:** Java 21 or newer  
 > **Primary platform:** Windows
 
@@ -44,6 +44,10 @@ Confirmed base-game editing is organized by purpose instead of one large Base Ga
 The legacy **Base Fields** and **DLC Fields** research tabs were replaced in v0.7.1 by the unified Research Inspector. Confirmed editing stays in the five categorized tabs above.
 
 The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki pages, damage-testing material and supplied weapon-stat tables are used by the project as research evidence for identifying more archive fields, not as end-user application UI.
+
+## v0.7.3 tab readability fix
+
+v0.7.3 fixes dark/black text that could remain on top-level tabs under Nimbus. The theme now supplies explicit Nimbus text colors for enabled, selected, focused, hover and pressed tab states, and also forces per-tab foreground/background colors at runtime. Selected tabs use white text; inactive tabs use the light application text color.
 
 ## v0.7.2 Dark research UI
 
@@ -207,7 +211,7 @@ Linux/macOS:
 The source targets Java 21 with `javac --release 21`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.7.2.jar
+dist/DXMD-Archive-Editor-Pro-v0.7.3.jar
 ```
 
 ## Credits
