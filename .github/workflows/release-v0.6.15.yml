@@ -24,192 +24,65 @@ jobs:
           distribution: temurin
           java-version: '11'
 
-      - name: Finalize v0.6.15 raw-audit integration
+      - name: Finalize raw-audit source integration
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          def read(path):
-              return Path(path).read_text(encoding='utf-8')
-          def write(path, text):
-              Path(path).write_text(text, encoding='utf-8')
-          def replace_required(text, old, new, label):
-              if old not in text:
-                  raise SystemExit('Required patch target missing: ' + label)
-              return text.replace(old, new, 1)
+          def read(path): return Path(path).read_text(encoding='utf-8')
+          def write(path,text): Path(path).write_text(text,encoding='utf-8')
+          def req(text,old,new,label):
+              if old not in text: raise SystemExit('Required patch target missing: '+label)
+              return text.replace(old,new,1)
 
-          # Correct the one semantic error discovered by reading the supplied
-          # Silence To The Guns guide against the raw byte changes.
           path='src/main/java/RawArchiveAuditCatalog.java'
           s=read(path)
-          s=s.replace('"Takedown Power Consumption Override"', '"Takedown Power Consumption Control"')
-          old='''add(archive,offset,"4DC71C10",Level.CONFIRMED,weapon+" Built-in Silencer Function ID",\n                "Silence To The Guns replaces 4DC71C10 with 26ACCD27; its guide identifies that replacement as redirecting the weapon to the built-in silencer function.",false);'''
-          new='''add(archive,offset,"4DC71C10",Level.CONFIRMED,weapon+" Standard-Reticle Function Slot / Silencer Override",\n                "Silence To The Guns documents 4DC71C10 as a sniper/standard-reticle-related function and replaces it with 26ACCD27, the built-in silencer function ID. The field is therefore a function slot used by the mod for a silencer override; 4DC71C10 itself is not a silencer ID.",false);'''
-          s=replace_required(s, old, new, 'Silence function-slot semantics')
+          s=s.replace('"Takedown Power Consumption Override"','"Takedown Power Consumption Control"')
+          old='add(archive,offset,"4DC71C10",Level.CONFIRMED,weapon+" Built-in Silencer Function ID",\n                "Silence To The Guns replaces 4DC71C10 with 26ACCD27; its guide identifies that replacement as redirecting the weapon to the built-in silencer function.",false);'
+          new='add(archive,offset,"4DC71C10",Level.CONFIRMED,weapon+" Standard-Reticle Function Slot / Silencer Override",\n                "Silence To The Guns documents 4DC71C10 as a sniper/standard-reticle-related function and replaces it with 26ACCD27, the built-in silencer function ID. The field is therefore a function slot used by the mod for a silencer override; 4DC71C10 itself is not a silencer ID.",false);'
+          s=req(s,old,new,'Silence function-slot semantics')
           write(path,s)
 
-          # Make the raw audit catalog authoritative for confidence and selective restore.
           path='src/main/java/FieldConfidenceAudit.java'
           s=read(path)
-          s=replace_required(s,
-          '''    static boolean isBaseConfirmed(BaseResearchProfiles.Field f) {\n        if (f==null || f.category==null || !f.category.startsWith("KNOWN")) return false;''',
-          '''    static boolean isBaseConfirmed(BaseResearchProfiles.Field f) {\n        if (f==null) return false;\n        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);\n        if (raw!=null) return raw.level==RawArchiveAuditCatalog.Level.CONFIRMED;\n        if (f.category==null || !f.category.startsWith("KNOWN")) return false;''',
-          'Base confirmed raw override')
-          s=replace_required(s,
-          '''    static Assessment assessBase(BaseResearchProfiles.Field f, String nearbySpecific, String nearbyContext) {\n        if (f==null) return unidentified();''',
-          '''    static Assessment assessBase(BaseResearchProfiles.Field f, String nearbySpecific, String nearbyContext) {\n        if (f==null) return unidentified();\n        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);\n        if (raw!=null) return rawAssessment(raw);''',
-          'Base raw assessment')
-          s=replace_required(s,
-          '''    static boolean isBaseSaveRisk(BaseResearchProfiles.Field f) {\n        if (!isBaseConfirmed(f)) return false;''',
-          '''    static boolean isBaseSaveRisk(BaseResearchProfiles.Field f) {\n        if (f==null) return false;\n        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);\n        if (raw!=null) return raw.saveRisk;\n        if (!isBaseConfirmed(f)) return false;''',
-          'Base raw save risk')
-          s=replace_required(s,
-          '''    static boolean isDlcConfirmed(String profileName, DLCProfiles.Field f) {\n        if (f==null) return false;''',
-          '''    static boolean isDlcConfirmed(String profileName, DLCProfiles.Field f) {\n        if (f==null) return false;\n        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);\n        if (raw!=null) return raw.level==RawArchiveAuditCatalog.Level.CONFIRMED;''',
-          'DLC confirmed raw override')
-          s=replace_required(s,
-          '''    static boolean isDlcSaveRisk(String profileName, DLCProfiles.Field f) {\n        if (f==null) return false;''',
-          '''    static boolean isDlcSaveRisk(String profileName, DLCProfiles.Field f) {\n        if (f==null) return false;\n        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);\n        if (raw!=null) return raw.saveRisk;''',
-          'DLC raw save risk')
-          s=replace_required(s,
-          '''    static Assessment assessDlc(String profileName, DLCProfiles.Field f, String nearbyContext) {\n        if (f==null) return unidentified();''',
-          '''    static Assessment assessDlc(String profileName, DLCProfiles.Field f, String nearbyContext) {\n        if (f==null) return unidentified();\n        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);\n        if (raw!=null) return rawAssessment(raw);''',
-          'DLC raw assessment')
-          marker='''    private static Assessment unidentified() {\n        return new Assessment(Confidence.UNIDENTIFIED, "Unidentified", "No focused comparison or trustworthy structural evidence identifies this row yet.", false);\n    }'''
-          helpers='''    private static RawArchiveAuditCatalog.Mapping rawBaseMapping(BaseResearchProfiles.Field f) {\n        if (f==null || f.original==null) return null;\n        return RawArchiveAuditCatalog.mapping("Game.layer.1.all.archive",f.offset,f.original.length);\n    }\n\n    private static RawArchiveAuditCatalog.Mapping rawDlcMapping(String profileName,DLCProfiles.Field f) {\n        if (f==null || f.original==null || profileName==null) return null;\n        return RawArchiveAuditCatalog.mapping(profileName,f.offset,f.original.length);\n    }\n\n    private static Assessment rawAssessment(RawArchiveAuditCatalog.Mapping raw) {\n        Confidence confidence;\n        if (raw.level==RawArchiveAuditCatalog.Level.CONFIRMED) confidence=Confidence.CONFIRMED;\n        else if (raw.level==RawArchiveAuditCatalog.Level.STRONG_SUSPECTED) confidence=Confidence.STRONG_SUSPECTED;\n        else confidence=Confidence.SUSPECTED;\n        String evidence=raw.evidence+" "+RawArchiveAuditCatalog.evidenceSummary(raw.archive,raw.offset,raw.length());\n        return new Assessment(confidence,raw.name,evidence,raw.saveRisk);\n    }\n\n'''+marker
-          s=replace_required(s,marker,helpers,'Raw assessment helpers')
+          s=req(s,'    static boolean isBaseConfirmed(BaseResearchProfiles.Field f) {\n        if (f==null || f.category==null || !f.category.startsWith("KNOWN")) return false;',
+                '    static boolean isBaseConfirmed(BaseResearchProfiles.Field f) {\n        if (f==null) return false;\n        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);\n        if (raw!=null) return raw.level==RawArchiveAuditCatalog.Level.CONFIRMED;\n        if (f.category==null || !f.category.startsWith("KNOWN")) return false;','Base confirmed raw override')
+          s=req(s,'    static Assessment assessBase(BaseResearchProfiles.Field f, String nearbySpecific, String nearbyContext) {\n        if (f==null) return unidentified();',
+                '    static Assessment assessBase(BaseResearchProfiles.Field f, String nearbySpecific, String nearbyContext) {\n        if (f==null) return unidentified();\n        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);\n        if (raw!=null) return rawAssessment(raw);','Base raw assessment')
+          s=req(s,'    static boolean isBaseSaveRisk(BaseResearchProfiles.Field f) {\n        if (!isBaseConfirmed(f)) return false;',
+                '    static boolean isBaseSaveRisk(BaseResearchProfiles.Field f) {\n        if (f==null) return false;\n        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);\n        if (raw!=null) return raw.saveRisk;\n        if (!isBaseConfirmed(f)) return false;','Base raw save risk')
+          s=req(s,'    static boolean isDlcConfirmed(String profileName, DLCProfiles.Field f) {\n        if (f==null) return false;',
+                '    static boolean isDlcConfirmed(String profileName, DLCProfiles.Field f) {\n        if (f==null) return false;\n        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);\n        if (raw!=null) return raw.level==RawArchiveAuditCatalog.Level.CONFIRMED;','DLC confirmed raw override')
+          s=req(s,'    static boolean isDlcSaveRisk(String profileName, DLCProfiles.Field f) {\n        if (f==null) return false;',
+                '    static boolean isDlcSaveRisk(String profileName, DLCProfiles.Field f) {\n        if (f==null) return false;\n        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);\n        if (raw!=null) return raw.saveRisk;','DLC raw save risk')
+          s=req(s,'    static Assessment assessDlc(String profileName, DLCProfiles.Field f, String nearbyContext) {\n        if (f==null) return unidentified();',
+                '    static Assessment assessDlc(String profileName, DLCProfiles.Field f, String nearbyContext) {\n        if (f==null) return unidentified();\n        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);\n        if (raw!=null) return rawAssessment(raw);','DLC raw assessment')
+          marker='    private static Assessment unidentified() {\n        return new Assessment(Confidence.UNIDENTIFIED, "Unidentified", "No focused comparison or trustworthy structural evidence identifies this row yet.", false);\n    }'
+          helpers='    private static RawArchiveAuditCatalog.Mapping rawBaseMapping(BaseResearchProfiles.Field f) {\n        if (f==null || f.original==null) return null;\n        return RawArchiveAuditCatalog.mapping("Game.layer.1.all.archive",f.offset,f.original.length);\n    }\n\n    private static RawArchiveAuditCatalog.Mapping rawDlcMapping(String profileName,DLCProfiles.Field f) {\n        if (f==null || f.original==null || profileName==null) return null;\n        return RawArchiveAuditCatalog.mapping(profileName,f.offset,f.original.length);\n    }\n\n    private static Assessment rawAssessment(RawArchiveAuditCatalog.Mapping raw) {\n        Confidence confidence;\n        if (raw.level==RawArchiveAuditCatalog.Level.CONFIRMED) confidence=Confidence.CONFIRMED;\n        else if (raw.level==RawArchiveAuditCatalog.Level.STRONG_SUSPECTED) confidence=Confidence.STRONG_SUSPECTED;\n        else confidence=Confidence.SUSPECTED;\n        String evidence=raw.evidence+" "+RawArchiveAuditCatalog.evidenceSummary(raw.archive,raw.offset,raw.length());\n        return new Assessment(confidence,raw.name,evidence,raw.saveRisk);\n    }\n\n'+marker
+          s=req(s,marker,helpers,'Raw assessment helpers')
           write(path,s)
 
-          # Versioned build output and window title.
           for path in ['src/main/java/Launcher.java','build.sh','build.bat']:
-              s=read(path).replace('v0.6.14','v0.6.15')
-              write(path,s)
+              write(path,read(path).replace('v0.6.14','v0.6.15'))
 
-          # New audit document. Raw archives themselves are never committed.
-          audit='''# DXMD Archive Editor Pro — Field Confidence Audit v0.6.15
-
-v0.6.15 replaces the reconstructed comparison baseline with an audit made directly from the complete supplied clean/original and modded archive set.
-
-## Authoritative dataset
-
-- 84 archive files inspected.
-- 6 clean originals: Base plus Assault, Classic, Enforcer, Intruder and Tactical DLC.
-- 78 physical modded-vs-original comparisons.
-- 48 SHA-256-deduplicated supplied variants in the retained evidence set; 47 are modified and one is an exact-original control.
-- 7,222 distinct changed byte-runs retained as derived evidence.
-- No game or mod archive is redistributed by this repository; only hashes, offsets and changed-byte evidence are retained.
-
-## Confidence rules
-
-**Confirmed** requires a focused comparison, independent agreement between focused mods, or an already established editor mapping. **Strong suspected** means the effect family is isolated but the exact internal sub-role is not. **Suspected** means useful structural or contextual evidence exists but is not sufficient to identify the exact control. **Unidentified** remains the default when evidence does not isolate a role.
-
-Generated nearby families such as `DAMAGE_01`, `ACCURACY_01`, `RATE_OF_FIRE_02` and `RECOIL_01` are never proof by themselves. Hardcore Revival remains valuable coverage but changes too many weapon properties simultaneously to isolate most sub-fields.
-
-## v0.6.15 audited counts
-
-- Base: 2,546 non-overlapping field records, 233 confirmed, 48 strong-suspected.
-- Base comparison references: 29 after integrating all raw variants with the existing research references.
-- DLC: 350 non-overlapping field records, 11 confirmed, 48 strong-suspected.
-- Confirmed DLC by pack: Assault 2, Classic 1, Enforcer 2, Intruder 1, Tactical 5.
-
-The row totals changed because exact multi-byte mappings now replace older overlapping fragments instead of being layered on top of them.
-
-## Corrections from v0.6.14
-
-### `4D C7 1C 10` is not the silencer-function ID
-
-The supplied Silence To The Guns guide identifies `4D C7 1C 10` as a sniper/standard-reticle-related function. The mod replaces it with `26 AC CD 27`, which is the built-in silencer function ID. v0.6.15 therefore labels these rows **Standard-Reticle Function Slot / Silencer Override**. The previous interpretation that `4D C7 1C 10` itself was a silencer ID was incorrect.
-
-### Elite Battle Rifle inventory width
-
-The clean Assault archive byte at offset `54331` is `05`. Independent inventory-focused archives change the same byte `05→03`, while Favored Elites Plus changes it to `02`. This is now confirmed as the Elite Battle Rifle inventory-grid width. One supplied README describes the vanilla width as 6; the clean archive byte is authoritative for the stored value and the documentation discrepancy is retained as such rather than forcing the archive to match the prose.
-
-## Newly strengthened Base mappings
-
-Focused comparisons now confirm the Takedown Power Consumption control, Energy Auto-Regeneration Limit, Biocell Energy Gain, Takedown Energy Cost, four Grenade Launcher ammo-height controls, ten Experimental Augmentation gates, documented bolt-action override toggles, built-in-silencer enable toggles, and the reticle-function slots used by Silence To The Guns for silencer overrides.
-
-The Takedown Power Consumption field is deliberately called a **control**, not a numeric cost: Icarus Reflexes changes the isolated four-byte value to zero, but its raw value behaves like an internal identifier/control. The separate float at `7413189` remains the confirmed Takedown Energy Cost.
-
-## Suppressor debuff fields
-
-I Need The Edge v1.2 isolates five Base two-component pairs and corresponding Enforcer/Intruder DLC pairs while its documented change removes suppressor damage debuffs. These are strong evidence for **Suppressor Damage-Debuff Components A/B**, but the internal distinction between the two components is not independently decoded, so they remain strong-suspected rather than receiving invented sub-stat names.
-
-## Micro-Assembler contamination handling
-
-Three Tactical `0ACC4075` markers changed to zero are confirmed as Micro-Assembler Experimental/Overclock gates because the supplied mod documentation identifies that behavior and the same marker structure is independently established by Adam 2.0. Tactical offsets `107324` and `108070` remain suspected: the supplied Micro-Assembler archive also carries unrelated Elite Tranquilizer inventory/magazine edits, so those bytes are not attributed to Micro-Assembler without independent evidence.
-
-## Restore behavior
-
-Selective **Restore Editor Fields to Original** follows this same confidence policy. Confirmed mappings are restored; strong-suspected, suspected and unidentified research bytes are left untouched. Tests against copies of the real clean Base and Assault archives verified that newly confirmed mappings restore correctly while research bytes remain unchanged. Exact `.bak` restoration remains the whole-file recovery path.
-
-## Promotion rule
-
-Future fields should move to Confirmed only when another focused archive, documentation plus an isolated byte change, or equivalent independent evidence removes the ambiguity. Proximity to a readable name or membership in a generated weapon family is not enough.
-'''
-          write('FIELD_AUDIT_v0.6.15.md',audit)
-
-          notes='''# DXMD Archive Editor Pro v0.6.15
-
-## Full raw-archive audit
-
-This release integrates the complete supplied clean/original + modded archive dataset directly into the Base and DLC research models instead of relying only on the older reconstructed comparison tables.
-
-- 84 archive files audited across Base and all five DLC packs.
-- 78 physical modded-vs-original comparisons.
-- 48 deduplicated supplied comparison variants retained as derived evidence (47 modified + one exact-original control).
-- 7,222 changed byte-runs available to the confidence/evidence layer.
-- Raw comparison variants are now available in the Base/DLC research Compare lists.
-- No game or mod archives are redistributed; the repository stores derived hashes/offsets/deltas only.
-
-## Corrections and new confirmations
-
-- Corrects the `4D C7 1C 10` interpretation: it is a sniper/standard-reticle-related function, not the built-in silencer ID. Silence To The Guns replaces it with `26 AC CD 27`, the silencer function. The affected controls are now named **Standard-Reticle Function Slot / Silencer Override**.
-- Confirms the Elite Battle Rifle inventory-grid width from independent raw comparisons (`05→03`, with Favored Elites Plus `→02`).
-- Adds focused Base confirmations for the Icarus Reflexes takedown-power control, regeneration/energy controls, Grenade Launcher ammo heights, Experimental Augmentation gates, bolt-action overrides, silencer-enable toggles and reticle/silencer override slots.
-- Adds focused DLC confirmations from Silence To The Guns and the Micro-Assembler gate pattern while retaining contaminated Tactical bytes as suspected.
-- Keeps suppressor damage-debuff pairs strong-suspected: their effect family is isolated, but their exact A/B internal sub-roles are not independently decoded.
-
-## Audited confidence totals
-
-- Base: 2,546 rows; 233 confirmed; 48 strong-suspected; 29 comparison references.
-- DLC: 350 rows; 11 confirmed; 48 strong-suspected.
-- Confirmed DLC by pack: Assault 2, Classic 1, Enforcer 2, Intruder 1, Tactical 5.
-
-## Restore safety
-
-Selective restore uses the same raw-audit confidence model: confirmed rows restore to embedded clean values, while strong-suspected/suspected/unidentified research bytes remain untouched. `.bak` remains the exact whole-file recovery option.
-
-See `FIELD_AUDIT_v0.6.15.md` for the evidence rules and correction details.
-
-## Requirements
-
-Java 11 or newer. Keep game archives and saves backed up when testing research fields, especially inventory-dimension controls.
-'''
-          write('RELEASE_NOTES.md',notes)
-
-          # README current-state updates while preserving the v0.6.14 section as history.
           path='README.md'
           s=read(path)
-          s=s.replace('> **Current version:** v0.6.14', '> **Current version:** v0.6.15')
-          s=s.replace('See **[FIELD_AUDIT_v0.6.14.md](FIELD_AUDIT_v0.6.14.md)** for the current confirmed/suspected field-confidence methodology and evidence baseline.',
-                      'See **[FIELD_AUDIT_v0.6.15.md](FIELD_AUDIT_v0.6.15.md)** for the current raw-archive confirmed/suspected evidence baseline. The v0.6.14 audit remains in the repository as the previous baseline.')
-          s=s.replace('## v0.6.14 tab layout', '## Current tab layout')
-          s=s.replace('It currently carries **2,553 field records** across **12 comparison profiles**.',
-                      'It currently carries **2,546 non-overlapping field records** and **29 comparison references** after integrating the complete raw archive audit.')
-          s=s.replace('### v0.6.14 confidence counts', '### v0.6.14 confidence counts (historical baseline)')
-          insert='''## v0.6.15 raw-archive audit\n\nv0.6.15 compares the full supplied clean/original archive set directly against every supplied modded archive, deduplicates identical variants by SHA-256, and retains 7,222 changed byte-runs as derived evidence. The audit covers 84 archive files, 78 physical modded-vs-original comparisons, and 48 deduplicated supplied variants.\n\nCurrent audited counts are **2,546 Base rows / 233 confirmed / 48 strong-suspected** and **350 DLC rows / 11 confirmed / 48 strong-suspected**. Confirmed DLC counts are Assault 2, Classic 1, Enforcer 2, Intruder 1 and Tactical 5.\n\nA key correction is that `4D C7 1C 10` is a sniper/standard-reticle-related function, not the silencer-function ID; Silence To The Guns replaces it with `26 AC CD 27`, the built-in silencer function. The UI now describes those locations as function slots used for a silencer override.\n\nRaw comparison variants are exposed in the research Compare controls, and selective restore follows the same strict raw-evidence confidence model. See **[FIELD_AUDIT_v0.6.15.md](FIELD_AUDIT_v0.6.15.md)** for details.\n\n'''
-          anchor='## v0.6.14 field-confidence audit\n'
-          if insert not in s:
-              s=replace_required(s,anchor,insert+anchor,'README v0.6.15 section')
+          s=s.replace('> **Current version:** v0.6.14','> **Current version:** v0.6.15')
+          s=s.replace('See **[FIELD_AUDIT_v0.6.14.md](FIELD_AUDIT_v0.6.14.md)** for the current confirmed/suspected field-confidence methodology and evidence baseline.','See **[FIELD_AUDIT_v0.6.15.md](FIELD_AUDIT_v0.6.15.md)** for the current raw-archive evidence baseline. The v0.6.14 audit remains available as the previous baseline.')
+          s=s.replace('## v0.6.14 tab layout','## Current tab layout')
+          s=s.replace('It currently carries **2,553 field records** across **12 comparison profiles**.','It currently carries **2,546 non-overlapping field records** and **29 comparison references** after integrating the complete raw archive audit.')
+          s=s.replace('### v0.6.14 confidence counts','### v0.6.14 confidence counts (historical baseline)')
+          if '## v0.6.15 raw-archive audit' not in s:
+              section='## v0.6.15 raw-archive audit\n\nv0.6.15 compares the complete supplied clean/original archive set directly with every supplied modded archive. The derived evidence covers 84 archive files, 78 physical modded-vs-original comparisons, 48 SHA-256-deduplicated supplied variants and 7,222 changed byte-runs.\n\nCurrent audited totals are **2,546 Base rows / 233 confirmed / 48 strong-suspected** and **350 DLC rows / 11 confirmed / 48 strong-suspected**. A key correction is that `4D C7 1C 10` is a sniper/standard-reticle-related function rather than the silencer ID; Silence To The Guns replaces it with `26 AC CD 27`, the built-in silencer function. See **[FIELD_AUDIT_v0.6.15.md](FIELD_AUDIT_v0.6.15.md)** for the evidence and promotion rules.\n\n'
+              s=req(s,'## v0.6.14 field-confidence audit\n',section+'## v0.6.14 field-confidence audit\n','README raw audit section')
           s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.6.14.jar','dist/DXMD-Archive-Editor-Pro-v0.6.15.jar')
           write(path,s)
           PY
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/main/java/RawArchiveAuditCatalog.java src/main/java/FieldConfidenceAudit.java \
-                  src/main/java/Launcher.java build.sh build.bat README.md RELEASE_NOTES.md FIELD_AUDIT_v0.6.15.md
+          git add src/main/java/RawArchiveAuditCatalog.java src/main/java/FieldConfidenceAudit.java src/main/java/Launcher.java build.sh build.bat README.md
           if ! git diff --cached --quiet; then
             git commit -m 'Finalize v0.6.15 raw archive audit'
             git push origin HEAD:main
@@ -224,67 +97,40 @@ Java 11 or newer. Keep game archives and saves backed up when testing research f
           public class AuditSanity {
               public static void main(String[] args) {
                   BaseResearchProfiles.Profile base=BaseResearchProfiles.get();
-                  int baseConfirmed=0, baseStrong=0;
-                  for (BaseResearchProfiles.Field f:base.fields) {
+                  int baseConfirmed=0,baseStrong=0;
+                  for(BaseResearchProfiles.Field f:base.fields){
                       FieldConfidenceAudit.Assessment a=FieldConfidenceAudit.assessBase(f,null,"");
-                      if (a.confidence==FieldConfidenceAudit.Confidence.CONFIRMED) baseConfirmed++;
-                      if (a.confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED) baseStrong++;
+                      if(a.confidence==FieldConfidenceAudit.Confidence.CONFIRMED)baseConfirmed++;
+                      if(a.confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED)baseStrong++;
                   }
-                  int dlcFields=0, dlcConfirmed=0, dlcStrong=0;
-                  int assault=0, classicPack=0, enforcer=0, intruder=0, tactical=0;
-                  for (String name:DLCProfiles.names()) {
-                      DLCProfiles.Profile p=DLCProfiles.get(name);
-                      dlcFields+=p.fields.size();
-                      for (DLCProfiles.Field f:p.fields) {
+                  int dlcFields=0,dlcConfirmed=0,dlcStrong=0,assault=0,classicPack=0,enforcer=0,intruder=0,tactical=0;
+                  for(String name:DLCProfiles.names()){
+                      DLCProfiles.Profile p=DLCProfiles.get(name);dlcFields+=p.fields.size();
+                      for(DLCProfiles.Field f:p.fields){
                           FieldConfidenceAudit.Assessment a=FieldConfidenceAudit.assessDlc(name,f,"");
-                          if (a.confidence==FieldConfidenceAudit.Confidence.CONFIRMED) {
+                          if(a.confidence==FieldConfidenceAudit.Confidence.CONFIRMED){
                               dlcConfirmed++;
-                              if (name.contains("Assault")) assault++;
-                              else if (name.contains("Classic")) classicPack++;
-                              else if (name.contains("Enforcer")) enforcer++;
-                              else if (name.contains("Intruder")) intruder++;
-                              else if (name.contains("Tactical")) tactical++;
+                              if(name.contains("Assault"))assault++; else if(name.contains("Classic"))classicPack++; else if(name.contains("Enforcer"))enforcer++; else if(name.contains("Intruder"))intruder++; else if(name.contains("Tactical"))tactical++;
                           }
-                          if (a.confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED) dlcStrong++;
+                          if(a.confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED)dlcStrong++;
                       }
                   }
-                  if (base.fields.size()!=2546) throw new RuntimeException("Expected 2546 Base rows, got "+base.fields.size());
-                  if (base.referenceNames.size()!=29) throw new RuntimeException("Expected 29 Base references, got "+base.referenceNames.size());
-                  if (baseConfirmed!=233) throw new RuntimeException("Expected 233 confirmed Base rows, got "+baseConfirmed);
-                  if (baseStrong!=48) throw new RuntimeException("Expected 48 strong-suspected Base rows, got "+baseStrong);
-                  if (RawArchiveAuditCatalog.uniqueVariantCount()!=48) throw new RuntimeException("Expected 48 raw variants, got "+RawArchiveAuditCatalog.uniqueVariantCount());
-                  if (RawArchiveAuditCatalog.rawRunCount()!=7222) throw new RuntimeException("Expected 7222 raw runs, got "+RawArchiveAuditCatalog.rawRunCount());
-                  if (dlcFields!=350) throw new RuntimeException("Expected 350 DLC rows, got "+dlcFields);
-                  if (dlcConfirmed!=11) throw new RuntimeException("Expected 11 confirmed DLC rows, got "+dlcConfirmed);
-                  if (dlcStrong!=48) throw new RuntimeException("Expected 48 strong-suspected DLC rows, got "+dlcStrong);
-                  if (assault!=2 || classicPack!=1 || enforcer!=2 || intruder!=1 || tactical!=5)
-                      throw new RuntimeException("Unexpected per-pack confirmed DLC counts: "+assault+","+classicPack+","+enforcer+","+intruder+","+tactical);
-
-                  BaseResearchProfiles.Field reticle=null;
-                  for(BaseResearchProfiles.Field f:base.fields) if(f.offset==4887605L) reticle=f;
-                  if(reticle==null) throw new RuntimeException("Missing Base reticle/silencer override mapping");
+                  if(base.fields.size()!=2546)throw new RuntimeException("Base rows "+base.fields.size());
+                  if(base.referenceNames.size()!=29)throw new RuntimeException("Base refs "+base.referenceNames.size());
+                  if(baseConfirmed!=233||baseStrong!=48)throw new RuntimeException("Base confidence "+baseConfirmed+"/"+baseStrong);
+                  if(RawArchiveAuditCatalog.uniqueVariantCount()!=48||RawArchiveAuditCatalog.rawRunCount()!=7222)throw new RuntimeException("Raw evidence counts");
+                  if(dlcFields!=350||dlcConfirmed!=11||dlcStrong!=48)throw new RuntimeException("DLC counts "+dlcFields+"/"+dlcConfirmed+"/"+dlcStrong);
+                  if(assault!=2||classicPack!=1||enforcer!=2||intruder!=1||tactical!=5)throw new RuntimeException("DLC pack counts "+assault+","+classicPack+","+enforcer+","+intruder+","+tactical);
+                  BaseResearchProfiles.Field reticle=null;for(BaseResearchProfiles.Field f:base.fields)if(f.offset==4887605L)reticle=f;
                   FieldConfidenceAudit.Assessment ra=FieldConfidenceAudit.assessBase(reticle,null,"");
-                  if(ra.confidence!=FieldConfidenceAudit.Confidence.CONFIRMED || !ra.name.contains("Standard-Reticle"))
-                      throw new RuntimeException("Reticle/silencer correction not active: "+ra.name);
-
-                  DLCProfiles.Field battle=null;
-                  for(DLCProfiles.Field f:DLCProfiles.get("DLCPackAssault.layer.0.all.archive").fields) if(f.offset==54331L) battle=f;
-                  if(battle==null || !FieldConfidenceAudit.isDlcConfirmed("DLCPackAssault.layer.0.all.archive",battle))
-                      throw new RuntimeException("Elite Battle Rifle width not confirmed");
-
-                  DLCProfiles.Field micro=null;
-                  for(DLCProfiles.Field f:DLCProfiles.get("DLCPackTactical.layer.0.all.archive").fields) if(f.offset==112348L) micro=f;
-                  if(micro==null || !FieldConfidenceAudit.isDlcConfirmed("DLCPackTactical.layer.0.all.archive",micro))
-                      throw new RuntimeException("Micro-Assembler gate not confirmed");
-
-                  DLCProfiles.Field suppressor=null;
-                  for(DLCProfiles.Field f:DLCProfiles.get("DLCPackEnforcer.layer.0.all.archive").fields) if(f.offset==31593120L) suppressor=f;
-                  if(suppressor==null || FieldConfidenceAudit.assessDlc("DLCPackEnforcer.layer.0.all.archive",suppressor,"").confidence!=FieldConfidenceAudit.Confidence.STRONG_SUSPECTED)
-                      throw new RuntimeException("Suppressor component confidence regressed");
-
-                  System.out.println("Raw audit OK: Base="+base.fields.size()+" C="+baseConfirmed+" SS="+baseStrong+
-                          ", raw variants="+RawArchiveAuditCatalog.uniqueVariantCount()+" runs="+RawArchiveAuditCatalog.rawRunCount()+
-                          ", DLC="+dlcFields+" C="+dlcConfirmed+" SS="+dlcStrong);
+                  if(ra.confidence!=FieldConfidenceAudit.Confidence.CONFIRMED||!ra.name.contains("Standard-Reticle"))throw new RuntimeException("Reticle correction missing");
+                  DLCProfiles.Field battle=null;for(DLCProfiles.Field f:DLCProfiles.get("DLCPackAssault.layer.0.all.archive").fields)if(f.offset==54331L)battle=f;
+                  if(battle==null||!FieldConfidenceAudit.isDlcConfirmed("DLCPackAssault.layer.0.all.archive",battle))throw new RuntimeException("Elite Battle width missing");
+                  DLCProfiles.Field micro=null;for(DLCProfiles.Field f:DLCProfiles.get("DLCPackTactical.layer.0.all.archive").fields)if(f.offset==112348L)micro=f;
+                  if(micro==null||!FieldConfidenceAudit.isDlcConfirmed("DLCPackTactical.layer.0.all.archive",micro))throw new RuntimeException("Micro gate missing");
+                  DLCProfiles.Field sup=null;for(DLCProfiles.Field f:DLCProfiles.get("DLCPackEnforcer.layer.0.all.archive").fields)if(f.offset==31593120L)sup=f;
+                  if(sup==null||FieldConfidenceAudit.assessDlc("DLCPackEnforcer.layer.0.all.archive",sup,"").confidence!=FieldConfidenceAudit.Confidence.STRONG_SUSPECTED)throw new RuntimeException("Suppressor confidence regressed");
+                  System.out.println("Raw audit OK: Base="+base.fields.size()+" C="+baseConfirmed+" SS="+baseStrong+", variants="+RawArchiveAuditCatalog.uniqueVariantCount()+" runs="+RawArchiveAuditCatalog.rawRunCount()+", DLC="+dlcFields+" C="+dlcConfirmed+" SS="+dlcStrong);
               }
           }
           EOF
