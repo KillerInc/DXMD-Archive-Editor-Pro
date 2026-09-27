@@ -1,0 +1,123 @@
+name: Release v0.7.11 Audit Gate
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.11-final4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Apply audited transform
+        shell: python
+        run: |
+          from pathlib import Path
+          wf=Path('.github/workflows/release-v0.7.11-final3.yml').read_text()
+          start=wf.index('      - name: Apply audited transform\n')
+          run=wf.index('        run: |\n',start)+len('        run: |\n')
+          end=wf.index('\n      - name: Build Java 21',run)
+          lines=wf[run:end].splitlines()
+          code='\n'.join(line[10:] if line.startswith('          ') else line for line in lines)
+          exec(compile(code,'v0711-audit-transform-final','exec'),{})
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Java 21 lint audit
+        shell: bash
+        run: |
+          rm -rf build/lint && mkdir -p build/lint
+          find src/main/java -name '*.java' -print0 | xargs -0 javac --release 21 -encoding UTF-8 -Xlint:all -d build/lint
+
+      - name: Run audit regressions
+        shell: bash
+        run: |
+          cat > build/V0711Audit.java <<'JAVA'
+          import java.io.*;
+          import java.lang.reflect.*;
+          import java.nio.file.*;
+          import javax.swing.*;
+          import options.*;
+          public class V0711Audit {
+            static void check(boolean v,String m){if(!v)throw new RuntimeException(m);}
+            public static void main(String[] args) throws Exception {
+              check(BaseResearchProfiles.get().fields.size()==2546,"Base row count");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size(); check(dlc==350,"DLC row count");
+              check(LogicalResourceCatalog.mappingCount()==10,"HeaderLib mapping count");
+              ResearchInspectorPanel panel=new ResearchInspectorPanel();
+              Field tf=ResearchInspectorPanel.class.getDeclaredField("table"); tf.setAccessible(true); JTable t=(JTable)tf.get(panel);
+              check(t.getColumnCount()==3,"Research columns");
+              check("Status".equals(t.getColumnName(0))&&"Attribute".equals(t.getColumnName(1))&&"User ID".equals(t.getColumnName(2)),"Column names");
+              var a=new FieldConfidenceAudit.Assessment(FieldConfidenceAudit.Confidence.SUSPECTED,"Suspected: Weapon Weapon Stat — Accuracy 02 component 3","",false);
+              check("Weapon Stat - Spread".equals(FieldConfidenceAudit.compactDisplayName(a,"ACCURACY_02 component 3")),"compact label");
+              Method parse=ResearchInspectorPanel.class.getDeclaredMethod("parseEdit",String.class,String.class,int.class); parse.setAccessible(true);
+              byte[] max=(byte[])parse.invoke(panel,"Unsigned integer (LE)","18446744073709551615",8); check(max.length==8,"U64 width"); for(byte b:max)check((b&255)==255,"U64 max");
+              byte[] min=(byte[])parse.invoke(panel,"Signed integer (LE)","-9223372036854775808",8); check((min[7]&255)==128,"I64 min");
+              Path tmp=Files.createTempFile("dxmd-bool-audit",".bin"); Files.write(tmp,new byte[]{2});
+              BooleanOption bo=new BooleanOption(new java.util.ArrayList<>(java.util.List.of(0L)),new java.util.ArrayList<>(java.util.List.of((short)0)),new java.util.ArrayList<>(java.util.List.of((short)1)),"Audit Bool","",false);
+              boolean rejected=false; try{FileAnalyzer.analyze(tmp.toFile(),new java.util.ArrayList<>(java.util.List.of(bo)));}catch(IOException ex){rejected=true;} finally{Files.deleteIfExists(tmp);} check(rejected,"strict boolean");
+              System.out.println("v0.7.11 audit regressions OK: Base=2546 DLC=350 U64/I64 strict-boolean UI");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V0711Audit.java
+          java -Djava.awt.headless=true -cp build/classes V0711Audit
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.11.jar | grep -q '^ResearchInspectorPanel.class$'
+
+      - name: Package ZIP and checksums
+        shell: bash
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.7.11.jar'
+          HASH="$(sha256sum "$JAR" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" 'DXMD-Archive-Editor-Pro-v0.7.11.jar' > dist/DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256
+          rm -rf build/release-package && mkdir -p build/release-package
+          cp "$JAR" dist/DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256 CODE_AUDIT_v0.7.11.md build/release-package/
+          printf '%s\n' 'DXMD Archive Editor Pro v0.7.11' 'Java 21 or newer required.' '' 'Windows verification:' '  certutil -hashfile DXMD-Archive-Editor-Pro-v0.7.11.jar SHA256' > build/release-package/VERIFY.txt
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.11.zip DXMD-Archive-Editor-Pro-v0.7.11.jar DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256 VERIFY.txt CODE_AUDIT_v0.7.11.md)
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.11.jar
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.11.zip
+
+      - name: Commit audited source
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main/java build.sh build.bat README.md RELEASE_NOTES.md CODE_AUDIT_v0.7.11.md
+          git commit -m "Complete v0.7.11 code and UI text audit"
+          git push
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.11
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256
+            CODE_AUDIT_v0.7.11.md
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.11
+          name: DXMD Archive Editor Pro v0.7.11
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256
+            CODE_AUDIT_v0.7.11.md
