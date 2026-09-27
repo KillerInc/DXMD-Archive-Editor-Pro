@@ -33,7 +33,8 @@ public class ResearchInspectorPanel extends JPanel {
     private final JTextArea rawContext = new JTextArea(4, 50);
     private final JTextArea interpretations = new JTextArea(9, 50);
     private final JTextArea evidenceArea = new JTextArea(8, 34);
-    private final JTextArea comparisonsArea = new JTextArea(12, 34);
+    private final ComparisonModel comparisonModel = new ComparisonModel();
+    private final JTable comparisonsTable = new JTable(comparisonModel);
     private final JLabel confidenceLabel = new JLabel("No row selected");
     private final JSpinner candidateDelta = new JSpinner(new SpinnerNumberModel(0, -8, 8, 1));
     private final JComboBox<Integer> candidateWidth = new JComboBox<>(new Integer[]{1, 2, 4, 8});
@@ -92,8 +93,11 @@ public class ResearchInspectorPanel extends JPanel {
         evidenceArea.setEditable(false);
         evidenceArea.setLineWrap(true);
         evidenceArea.setWrapStyleWord(true);
-        comparisonsArea.setEditable(false);
-        comparisonsArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        comparisonsTable.setRowHeight(22);
+        comparisonsTable.setFillsViewportHeight(true);
+        comparisonsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        comparisonsTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+        comparisonsTable.getTableHeader().setReorderingAllowed(false);
 
         JPanel identity = new JPanel(new GridLayout(4, 2, 6, 3));
         identity.setBorder(BorderFactory.createTitledBorder("Selected Region"));
@@ -138,7 +142,8 @@ public class ResearchInspectorPanel extends JPanel {
         confidence.add(confidenceLabel, BorderLayout.CENTER);
         right.add(confidence, BorderLayout.NORTH);
         JScrollPane evTop = new JScrollPane(evidenceArea);
-        JScrollPane evBottom = new JScrollPane(comparisonsArea);
+        JScrollPane evBottom = new JScrollPane(comparisonsTable);
+        configureComparisonColumns();
         evTop.setBorder(BorderFactory.createTitledBorder("Evidence"));
         evBottom.setBorder(BorderFactory.createTitledBorder("Comparison Evidence"));
         JSplitPane evSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, evTop, evBottom);
@@ -321,8 +326,7 @@ public class ResearchInspectorPanel extends JPanel {
         }
         evidenceArea.setText(evidence);
         evidenceArea.setCaretPosition(0);
-        comparisonsArea.setText(comparisons(row));
-        comparisonsArea.setCaretPosition(0);
+        comparisonModel.setRows(comparisonRows(row));
         updateCandidate();
     }
 
@@ -518,28 +522,24 @@ public class ResearchInspectorPanel extends JPanel {
         return b;
     }
 
-    private String comparisons(Row row) {
-        StringBuilder s = new StringBuilder();
-        s.append(String.format("%-30s  %-22s  %s%n", "Source", "Hex", "Decoded"));
-        s.append("Original                       ")
-                .append(String.format("%-22s", hexSpaced(row.original)))
-                .append("  ").append(shortDecode(row.original)).append('\n');
+    private ArrayList<ComparisonRow> comparisonRows(Row row) {
+        ArrayList<ComparisonRow> rows = new ArrayList<>();
+        rows.add(new ComparisonRow("Original", hexSpaced(row.original), shortDecode(row.original)));
         if (activeSource.base) {
             BaseResearchProfiles.Field f = (BaseResearchProfiles.Field) row.field;
             for (Map.Entry<String, byte[]> e : f.references.entrySet()) {
                 if (e.getValue() != null && !Arrays.equals(e.getValue(), f.original))
-                    s.append(String.format("%-30s  %-22s  %s%n", trim(e.getKey(), 30),
-                            hexSpaced(e.getValue()), shortDecode(e.getValue())));
+                    rows.add(new ComparisonRow(e.getKey(), hexSpaced(e.getValue()), shortDecode(e.getValue())));
             }
         } else {
             DLCProfiles.Field f = (DLCProfiles.Field) row.field;
             for (String n : DLCReferenceProfiles.namesFor(activeSource.profileName)) {
                 byte[] b = DLCReferenceProfiles.get(activeSource.profileName, n, f.offset, f);
                 if (b != null && !Arrays.equals(b, f.original))
-                    s.append(String.format("%-30s  %-22s  %s%n", trim(n, 30), hexSpaced(b), shortDecode(b)));
+                    rows.add(new ComparisonRow(n, hexSpaced(b), shortDecode(b)));
             }
         }
-        return s.toString();
+        return rows;
     }
 
     private String shortDecode(byte[] b) {
@@ -593,6 +593,16 @@ public class ResearchInspectorPanel extends JPanel {
         for (int i = 0; i < table.getColumnCount(); i++) sorter.setSortable(i, false);
     }
 
+    private void configureComparisonColumns() {
+        if (comparisonsTable.getColumnCount() != 3) return;
+        comparisonsTable.getColumnModel().getColumn(0).setPreferredWidth(180);
+        comparisonsTable.getColumnModel().getColumn(0).setMinWidth(120);
+        comparisonsTable.getColumnModel().getColumn(1).setPreferredWidth(150);
+        comparisonsTable.getColumnModel().getColumn(1).setMinWidth(100);
+        comparisonsTable.getColumnModel().getColumn(2).setPreferredWidth(360);
+        comparisonsTable.getColumnModel().getColumn(2).setMinWidth(180);
+    }
+
     private void clearInspector() {
         for (JTextField f : new JTextField[]{resourceField, chunkField, resourceOffsetField, archiveOffsetField,
                 logicalResourceField, headerLibField, resourceIdField, ownerIdField, payloadOffsetField,
@@ -600,7 +610,7 @@ public class ResearchInspectorPanel extends JPanel {
         rawContext.setText("");
         interpretations.setText("");
         evidenceArea.setText("");
-        comparisonsArea.setText("");
+        comparisonModel.setRows(new ArrayList<>());
         confidenceLabel.setText("No row selected");
     }
 
@@ -645,6 +655,31 @@ public class ResearchInspectorPanel extends JPanel {
     private static String trim(String s, int n) { return s.length() <= n ? s : s.substring(0, n - 1) + "…"; }
     private static String shortDlc(String n) { return n.replace("DLCPack", "").replace(".layer.0.all.archive", ""); }
     private static JTextField readonly() { JTextField f = new JTextField(); f.setEditable(false); return f; }
+
+    private record ComparisonRow(String source, String hex, String decoded) {}
+
+    private static final class ComparisonModel extends AbstractTableModel {
+        private final String[] columns = {"Source", "Hex", "Decoded"};
+        private ArrayList<ComparisonRow> rows = new ArrayList<>();
+
+        void setRows(ArrayList<ComparisonRow> newRows) {
+            rows = newRows == null ? new ArrayList<>() : newRows;
+            fireTableDataChanged();
+        }
+
+        public int getRowCount() { return rows.size(); }
+        public int getColumnCount() { return columns.length; }
+        public String getColumnName(int c) { return columns[c]; }
+        public Object getValueAt(int r, int c) {
+            ComparisonRow row = rows.get(r);
+            return switch (c) {
+                case 0 -> row.source();
+                case 1 -> row.hex();
+                case 2 -> row.decoded();
+                default -> "";
+            };
+        }
+    }
 
     private final class ResearchModel extends AbstractTableModel {
         private final String[] columns = {"Status", "Attribute", "User ID"};
