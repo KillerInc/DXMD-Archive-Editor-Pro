@@ -69,6 +69,12 @@ final class UiTheme {
         UIManager.put("ComboBox.foreground", new ColorUIResource(TEXT));
         UIManager.put("Button.background", new ColorUIResource(BUTTON));
         UIManager.put("Button.foreground", new ColorUIResource(TEXT));
+        UIManager.put("ProgressBar.background", new ColorUIResource(FIELD));
+        UIManager.put("ProgressBar.foreground", new ColorUIResource(ACCENT));
+        UIManager.put("ProgressBar.selectionBackground", new ColorUIResource(TEXT));
+        UIManager.put("ProgressBar.selectionForeground", new ColorUIResource(APP_BG));
+        UIManager.put("ProgressBar.repaintInterval", 35);
+        UIManager.put("ProgressBar.cycleTime", 900);
         UIManager.put("TabbedPane.background", new ColorUIResource(APP_BG));
         UIManager.put("TabbedPane.foreground", new ColorUIResource(TEXT));
         UIManager.put("TabbedPane.selected", new ColorUIResource(PANEL_ALT));
@@ -156,6 +162,11 @@ final class UiTheme {
             spinner.setBackground(FIELD);
             spinner.setForeground(TEXT);
             spinner.setBorder(new LineBorder(BORDER));
+        } else if (c instanceof JProgressBar bar) {
+            bar.setBackground(FIELD);
+            bar.setForeground(ACCENT);
+            bar.setBorder(new LineBorder(BORDER));
+            bar.setOpaque(true);
         } else if (c instanceof JLabel label) {
             label.setForeground(TEXT);
         } else if (c instanceof JTabbedPane tabs) {
