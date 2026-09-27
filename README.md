@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.6.12  
+> **Current version:** v0.6.13  
 > **Runtime:** Java 11 or newer  
 > **Primary platform:** Windows
 
@@ -28,7 +28,7 @@ DLC/runtime/DLCPackTactical.layer.0.all.archive
 
 Select `DXMD.exe` and the editor resolves the expected base/DLC structure automatically. Startup detection only walks upward through the application path and validates the DXMD directory layout; it does not scan arbitrary nearby folders.
 
-## v0.6.12 tab layout
+## v0.6.13 tab layout
 
 Confirmed base-game editing is organized by purpose instead of one large Base Game tab:
 
@@ -38,7 +38,7 @@ Confirmed base-game editing is organized by purpose instead of one large Base Ga
 - **Economy & Crafting** — confirmed shop prices and Weapon Parts crafting costs.
 - **XP Rewards** — all confirmed XP/reward editing in one place: hacking, passwords/keycodes, objectives, stealth, remote hacking, exploration, social/CASIE, combat and mechanical-target rewards.
 - **Base Fields** — the full base-game diagnostic/research table.
-- **DLC Fields** — installed DLC research/edit tabs.
+- **DLC Fields** — installed DLC research/edit tabs with archive-derived nearby context.
 
 **Base Fields** and **DLC Fields** are intentionally the last two top-level tabs. The old **Base Game** tab was removed after its confirmed edits were assigned to normal categories.
 
@@ -104,6 +104,21 @@ Comparison profiles currently include Hardcore Revival Normal/Optional, Adam 2.0
 
 Installed DLC packs are displayed as individual tabs. Missing packs are normal and are not created by the tool. DLC research views support original/current values, comparison profiles, presets, User ID import/export, backups and restore functions.
 
+### DLC context audit in v0.6.13
+
+v0.6.13 brings the DLC research table onto the same conservative context model used by Base Fields:
+
+- **Nearby context / field** is resolved from readable identifiers in the actual loaded DLC archive instead of simply displaying the generated profile label.
+- Artificial numbered identities such as `FIRE_PATTERN_01 #2` / `#3` are stripped from the visible context.
+- Hex-like garbage and other weak printable strings are rejected as context.
+- Arbitrary non-raw labels are no longer automatically treated as confirmed/green fields.
+- The old nearest-semantic-field inference, which could spread one weapon-stat identity across unrelated rows within a large byte window, has been removed.
+- Only explicitly mapped DLC field families receive confirmed treatment; uncertain rows remain suspected or unidentified.
+- When no trustworthy nearby identifier exists, the table reports **No nearby readable identifier** rather than inventing an exact field identity.
+- DLC rows remain in physical archive order and context is recalculated whenever the archive is reloaded.
+
+The generated DLC labels are still retained internally as research hints and for compatibility with existing comparison/profile data; they are no longer treated as authoritative display identities.
+
 The v0.6.8 fix that initializes DLC Compare selections before building comparison columns remains included.
 
 ## Safety and restore behavior
@@ -113,7 +128,7 @@ Inventory-dimension changes can be unsafe when an affected item already exists i
 Two restore mechanisms serve different purposes:
 
 - **Restore `.bak`** replaces the whole archive with the exact pre-editor backup.
-- **Restore Editor Fields to Original** writes only confirmed editor-supported mappings back to clean values. Suspected/unidentified Base Fields records are deliberately left untouched, as are unrelated mod bytes.
+- **Restore Editor Fields to Original** writes only confirmed editor-supported mappings back to clean values. Suspected/unidentified research records are deliberately left untouched, as are unrelated mod bytes.
 
 SHA-256 identities are informational only; custom/modded archives are not rejected solely because their hash is unknown.
 
@@ -144,7 +159,7 @@ Linux/macOS:
 The source targets Java 11 with `javac --release 11`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.6.12.jar
+dist/DXMD-Archive-Editor-Pro-v0.6.13.jar
 ```
 
 ## Credits
