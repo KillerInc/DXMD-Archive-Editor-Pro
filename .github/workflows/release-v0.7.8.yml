@@ -1,0 +1,142 @@
+name: Release v0.7.8 Compact Research Table
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.8.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Keep only first three research columns
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p=Path('src/main/java/ResearchInspectorPanel.java')
+          s=p.read_text()
+          s=s.replace('listScroll.setPreferredSize(new Dimension(720, 600));',
+                      'listScroll.setPreferredSize(new Dimension(650, 600));')
+          s=s.replace('int[] w = {125, 360, 150, 220, 430, 130, 280, 75, 120, 110};',
+                      'int[] w = {125, 360, 150};')
+          old='''        private final String[] columns = {"Status", "Attribute", "User ID", "Context", "Logical Resource",\n                "Payload Offset", "Internal Resource", "Chunk", "Resource Offset", "Archive Offset"};'''
+          new='''        private final String[] columns = {"Status", "Attribute", "User ID"};'''
+          if old not in s:
+              raise SystemExit('Research column definition not found')
+          s=s.replace(old,new)
+          old_value='''        public Object getValueAt(int r, int c) {\n            Row row = rows.get(r);\n            ArchiveResourceIndex.Location loc = index == null ? null : index.locate(row.offset);\n            LogicalResourceCatalog.LogicalResource lr = logical(loc);\n            return switch (c) {\n                case 0 -> confidence(row);\n                case 1 -> displayName(row);\n                case 2 -> userId(row);\n                case 3 -> row.context;\n                case 4 -> lr == null ? "" : lr.logicalPath();\n                case 5 -> lr == null || loc == null ? "" : String.format("+0x%X", lr.payloadOffset(loc.resourceOffset()));\n                case 6 -> loc == null ? "" : loc.resourceName();\n                case 7 -> loc == null ? "" : loc.chunkIndex();\n                case 8 -> loc == null ? "" : loc.resourceOffset();\n                case 9 -> row.offset;\n                default -> "";\n            };\n        }'''
+          new_value='''        public Object getValueAt(int r, int c) {\n            Row row = rows.get(r);\n            return switch (c) {\n                case 0 -> confidence(row);\n                case 1 -> displayName(row);\n                case 2 -> userId(row);\n                default -> "";\n            };\n        }'''
+          if old_value not in s:
+              raise SystemExit('Research getValueAt block not found')
+          s=s.replace(old_value,new_value)
+          p.write_text(s)
+
+          p=Path('src/main/java/Launcher.java'); s=p.read_text().replace('DXMD Archive Editor Pro v0.7.7','DXMD Archive Editor Pro v0.7.8'); p.write_text(s)
+          for name in ('build.sh','build.bat'):
+              p=Path(name); s=p.read_text().replace('DXMD-Archive-Editor-Pro-v0.7.7.jar','DXMD-Archive-Editor-Pro-v0.7.8.jar'); p.write_text(s)
+
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.7', '> **Current version:** v0.7.8')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.7.jar','dist/DXMD-Archive-Editor-Pro-v0.7.8.jar')
+          anchor='## v0.7.7 DLC HeaderLib completion\n'
+          section='''## v0.7.8 compact Research Inspector list\n\nThe left side of the Research Inspector now keeps only **Status**, **Attribute**, and **User ID**. Archive/resource/HeaderLib/payload details remain in the selected-row inspector on the right, where they are useful without making the research list excessively wide. The list pane is also slightly narrower so the detailed inspector gets more room.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.8\n\n## Compact Research Inspector list\n\n- The left research table now contains only three columns:\n  - **Status**\n  - **Attribute**\n  - **User ID**\n- Removed Context, Logical Resource, Payload Offset, Internal Resource, Chunk, Resource Offset, and Archive Offset from the left table.\n- Those details are still available in the selected-row inspector on the right; no research metadata was removed.\n- The left list pane is slightly narrower, giving the detailed inspector more working space.\n\nAll v0.7.7 Base/DLC HeaderLib mappings and editing behavior remain unchanged.\n\nJava 21 or newer remains required.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Test compact table
+        shell: bash
+        run: |
+          cat > build/V078UiSanity.java <<'JAVA'
+          import javax.swing.*;
+          import java.lang.reflect.*;
+          public class V078UiSanity {
+            public static void main(String[] args) throws Exception {
+              System.setProperty("java.awt.headless","true");
+              ResearchInspectorPanel p=new ResearchInspectorPanel();
+              Field f=ResearchInspectorPanel.class.getDeclaredField("table");
+              f.setAccessible(true);
+              JTable t=(JTable)f.get(p);
+              if(t.getColumnCount()!=3) throw new RuntimeException("Expected 3 research columns, got "+t.getColumnCount());
+              String[] expect={"Status","Attribute","User ID"};
+              for(int i=0;i<3;i++) if(!expect[i].equals(t.getColumnName(i))) throw new RuntimeException("Column "+i+" = "+t.getColumnName(i));
+              if(LogicalResourceCatalog.mappingCount()!=10) throw new RuntimeException("Logical resource mappings changed");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              if(BaseResearchProfiles.get().fields.size()!=2546 || dlc!=350) throw new RuntimeException("Research profile counts changed");
+              System.out.println("v0.7.8 UI sanity OK: Status | Attribute | User ID");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V078UiSanity.java
+          java -Djava.awt.headless=true -cp build/classes V078UiSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.8.jar | grep -q '^ResearchInspectorPanel.class$'
+
+      - name: Package preferred ZIP and checksums
+        shell: bash
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.7.8.jar'
+          HASH="$(sha256sum "$JAR" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" 'DXMD-Archive-Editor-Pro-v0.7.8.jar' > dist/DXMD-Archive-Editor-Pro-v0.7.8.jar.sha256
+          rm -rf build/release-package
+          mkdir -p build/release-package
+          cp "$JAR" dist/DXMD-Archive-Editor-Pro-v0.7.8.jar.sha256 build/release-package/
+          cat > build/release-package/VERIFY.txt <<'TXT'
+          DXMD Archive Editor Pro v0.7.8 - verification
+
+          This release requires Java 21 or newer.
+
+          Windows SHA-256 verification:
+            certutil -hashfile DXMD-Archive-Editor-Pro-v0.7.8.jar SHA256
+
+          Compare the result with DXMD-Archive-Editor-Pro-v0.7.8.jar.sha256.
+          TXT
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.8.zip DXMD-Archive-Editor-Pro-v0.7.8.jar DXMD-Archive-Editor-Pro-v0.7.8.jar.sha256 VERIFY.txt)
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.8.jar
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.8.zip
+
+      - name: Commit source and documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main/java/ResearchInspectorPanel.java src/main/java/Launcher.java build.sh build.bat README.md RELEASE_NOTES.md
+          git commit -m "Simplify Research Inspector list to three columns"
+          git push
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.8
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.8.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.8.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.8.jar.sha256
+
+      - name: Create v0.7.8 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.8
+          name: DXMD Archive Editor Pro v0.7.8
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.8.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.8.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.8.jar.sha256
