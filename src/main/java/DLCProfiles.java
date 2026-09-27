@@ -16,6 +16,8 @@ public class DLCProfiles {
                 else if(x[0].equals("FIELD")){p.fields.add(new Field(Long.parseLong(x[1]),x[4],fromHex(x[2]),fromHex(x[3])));}
             }
         }
+        // v0.6.15 overlays focused mappings from the full raw OG + modded archive audit.
+        for(Profile p:profiles.values()) RawArchiveAuditCatalog.applyDlc(p);
         validateAndSort();
     }
     private static void validateAndSort() throws IOException {
