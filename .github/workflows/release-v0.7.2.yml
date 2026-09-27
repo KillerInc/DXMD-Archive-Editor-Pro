@@ -1,0 +1,89 @@
+name: Release v0.7.2 Dark Research UI
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Update v0.7.2 documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.1', '> **Current version:** v0.7.2')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.1.jar','dist/DXMD-Archive-Editor-Pro-v0.7.2.jar')
+          anchor='## v0.7.1 Research Inspector\n'
+          section='''## v0.7.2 Dark research UI\n\nv0.7.2 restyles the complete Swing application to match the Research Inspector mockup: dark navy work surfaces, teal/cyan selection accents, dark table headers and byte-inspector panes, subdued borders, and consistent controls across both the confirmed-stat tabs and Research Inspector. The application opens directly on Research Inspector while retaining Weapon Stats, Player Stats, Inventory Stats, Economy & Crafting and XP Rewards as normal confirmed-edit tabs.\n\nThe supplied Dawn/DXMD Python extractor was also tested against the clean archives as an independent structural cross-check. Its `ARCH` parser agrees with the Java archive index on the real container layout and supports linked archives, HeaderLib/BIN1 structures and resource-library reconstruction. It remains a research/reference tool; the released editor has no Python runtime dependency.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.2\n\n## Dark Research UI\n\n- Restyles the full application to match the approved dark Research Inspector mockup.\n- Dark navy application/panel backgrounds with teal/cyan accents.\n- Dark research tables and headers, teal row selection, subdued grid/border treatment and high-contrast text.\n- Raw byte and interpretation panes use a dark code-view presentation.\n- Buttons, text fields, combo boxes, spinners, tabs, scroll panes and titled panels use one consistent palette.\n- Research Inspector is the default selected tab at startup.\n- The five confirmed-stat tabs remain available and receive the same visual theme.\n- Java 21 remains the minimum runtime.\n\n## Dawn/DXMD parser cross-check\n\nThe supplied pure-Python Dawn/DXMD extractor was tested against the clean DLC archives and independently confirmed the `ARCH` directory/chunk model used by the Java Research Inspector. The Python implementation also documents HeaderLib (`BILH`/`BIN1`) parsing and `pc_resourcelib` reconstruction, which will be useful for deeper resource-level research. It is not required to run the Java editor.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Sanity test theme, profiles and bytecode
+        shell: bash
+        run: |
+          cat > build/V072SourceSanity.java <<'JAVA'
+          import javax.swing.*;
+          public class V072SourceSanity {
+            public static void main(String[] args) {
+              UiTheme.install();
+              if (BaseResearchProfiles.get().fields.size()!=2546) throw new RuntimeException("Base profile count changed");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              if (dlc!=350) throw new RuntimeException("DLC profile count changed: "+dlc);
+              if (!HalfFloat.formatLE(new byte[]{(byte)0x80,0x40}).equals("2.25")) throw new RuntimeException("Float16 regression");
+              if (UiTheme.ACCENT.getGreen() < 180) throw new RuntimeException("Theme accent regression");
+              System.out.println("v0.7.2 sanity OK: base=2546 dlc=350 theme="+UiTheme.ACCENT);
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V072SourceSanity.java
+          java -Djava.awt.headless=true -cp build/classes V072SourceSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.2.jar | grep -q '^ResearchInspectorPanel.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.2.jar | grep -q '^ArchiveResourceIndex.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.2.jar | grep -q '^UiTheme.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.2.jar | grep -q '^Launcher.class$'
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.2.jar
+
+      - name: Commit documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md RELEASE_NOTES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Document v0.7.2 dark research UI"
+            git push
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.2
+          path: dist/DXMD-Archive-Editor-Pro-v0.7.2.jar
+
+      - name: Create v0.7.2 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.2
+          name: DXMD Archive Editor Pro v0.7.2
+          body_path: RELEASE_NOTES.md
+          files: dist/DXMD-Archive-Editor-Pro-v0.7.2.jar
