@@ -80,7 +80,7 @@ final class ArchiveContextResolver {
     static String fallback(BaseResearchProfiles.Field f) {
         if (f == null) return "No nearby readable identifier";
         String base = legacyBase(f.label);
-        if (base.isEmpty() || base.toLowerCase(Locale.ROOT).startsWith("raw field"))
+        if (base.isEmpty() || base.toLowerCase(Locale.ROOT).startsWith("raw field") || FieldConfidenceAudit.isGenericWeaponFamilyLabel(f.label))
             return "No nearby readable identifier";
         return base;
     }

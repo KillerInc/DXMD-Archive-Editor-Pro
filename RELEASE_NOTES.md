@@ -34,6 +34,10 @@ Existing established Base editor mappings remain confirmed. Broad generated weap
 
 Selective **Restore Editor Fields to Original** now uses the same strict confirmation test. It restores confirmed mappings only. Suspected/unidentified research bytes are intentionally left alone; exact `.bak` restore remains the recovery path for experimental research edits.
 
+## Audit documentation
+
+The repository now includes `FIELD_AUDIT_v0.6.14.md`, documenting the confirmation threshold, fixed audit counts, confirmed DLC offsets, strong-suspected candidates, and promotion rules for future discoveries.
+
 ## Requirements
 
 Java 11 or newer. Keep game archives and saves backed up when testing research fields, especially inventory-dimension controls.

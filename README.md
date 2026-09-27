@@ -8,6 +8,8 @@ A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Ma
 
 The project does **not** redistribute Deus Ex game archives.
 
+See **[FIELD_AUDIT_v0.6.14.md](FIELD_AUDIT_v0.6.14.md)** for the current confirmed/suspected field-confidence methodology and evidence baseline.
+
 ## Supported archives
 
 Base game:
