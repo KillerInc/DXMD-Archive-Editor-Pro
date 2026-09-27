@@ -1,0 +1,96 @@
+name: Release v0.7.3 Tab Readability Fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Update v0.7.3 documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.2', '> **Current version:** v0.7.3')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.2.jar','dist/DXMD-Archive-Editor-Pro-v0.7.3.jar')
+          anchor='## v0.7.2 Dark research UI\n'
+          section='''## v0.7.3 tab readability fix\n\nv0.7.3 fixes dark/black text that could remain on top-level tabs under Nimbus. The theme now supplies explicit Nimbus text colors for enabled, selected, focused, hover and pressed tab states, and also forces per-tab foreground/background colors at runtime. Selected tabs use white text; inactive tabs use the light application text color.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.3\n\n## Tab readability fix\n\n- Fixes top-level tab labels that could remain black/dark under the Nimbus look-and-feel.\n- Explicitly themes enabled, selected, focused, hover and pressed Nimbus tab-text states.\n- Forces per-tab foreground colors at runtime as a second safeguard.\n- Selected tabs use white text; inactive tabs use the normal light theme text.\n- Keeps the v0.7.2 dark navy/teal theme and Java 21 requirement.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Sanity test tab colors, profiles and bytecode
+        shell: bash
+        run: |
+          cat > build/V073SourceSanity.java <<'JAVA'
+          import javax.swing.*;
+          import java.awt.*;
+          public class V073SourceSanity {
+            public static void main(String[] args) {
+              UiTheme.install();
+              JTabbedPane tabs=new JTabbedPane();
+              tabs.addTab("One",new JPanel());
+              tabs.addTab("Two",new JPanel());
+              tabs.setSelectedIndex(1);
+              UiTheme.apply(tabs);
+              for(int i=0;i<tabs.getTabCount();i++) {
+                Color c=tabs.getForegroundAt(i);
+                if(c==null || (c.getRed()<120 && c.getGreen()<120 && c.getBlue()<120))
+                  throw new RuntimeException("Unreadable tab foreground at "+i+": "+c);
+              }
+              if (BaseResearchProfiles.get().fields.size()!=2546) throw new RuntimeException("Base profile count changed");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              if (dlc!=350) throw new RuntimeException("DLC profile count changed: "+dlc);
+              System.out.println("v0.7.3 tabs/profile sanity OK");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V073SourceSanity.java
+          java -Djava.awt.headless=true -cp build/classes V073SourceSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.3.jar | grep -q '^UiTheme.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.3.jar | grep -q '^ResearchInspectorPanel.class$'
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.3.jar
+
+      - name: Commit documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md RELEASE_NOTES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Document v0.7.3 tab readability fix"
+            git push
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.3
+          path: dist/DXMD-Archive-Editor-Pro-v0.7.3.jar
+
+      - name: Create v0.7.3 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.3
+          name: DXMD Archive Editor Pro v0.7.3
+          body_path: RELEASE_NOTES.md
+          files: dist/DXMD-Archive-Editor-Pro-v0.7.3.jar
