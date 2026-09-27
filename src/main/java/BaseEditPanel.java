@@ -1,5 +1,4 @@
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -79,7 +78,8 @@ public class BaseEditPanel extends JPanel {
         header.add(titleRow, BorderLayout.NORTH);
 
         archiveField.setEditable(false);
-        archiveField.setBackground(Color.WHITE);
+        archiveField.setBackground(UiTheme.FIELD);
+        archiveField.setForeground(UiTheme.TEXT);
         archiveField.setFont(new Font("Courier New", Font.PLAIN, 13));
         header.add(archiveField, BorderLayout.SOUTH);
         add(header, BorderLayout.NORTH);
@@ -104,6 +104,7 @@ public class BaseEditPanel extends JPanel {
                 field.setFont(new Font("Courier New", Font.BOLD, 18));
                 field.setPreferredSize(new Dimension(95, 34));
                 field.setEnabled(false);
+                field.setForeground(UiTheme.TEXT);
                 field.getDocument().addDocumentListener(new DocumentListener() {
                     public void changedUpdate(DocumentEvent e) { onTextEdited(field, option); }
                     public void removeUpdate(DocumentEvent e) { onTextEdited(field, option); }
@@ -135,7 +136,7 @@ public class BaseEditPanel extends JPanel {
 
             JLabel label = new JLabel(option.getOptionName());
             label.setFont(new Font("Courier New", Font.PLAIN, 17));
-            label.setForeground(Color.GRAY);
+            label.setForeground(UiTheme.MUTED);
             label.addMouseListener(hover);
             gc.gridx = labelCol;
             gc.weightx = 1.0;
@@ -215,7 +216,7 @@ public class BaseEditPanel extends JPanel {
             invalidValues.clear();
             dirtyOptions.clear();
             for (JComponent c : entryValues) c.setEnabled(true);
-            for (JLabel label : entryLabels) label.setForeground(Color.BLACK);
+            for (JLabel label : entryLabels) label.setForeground(UiTheme.TEXT);
             defaults.setEnabled(true);
             current.setEnabled(true);
             showPreset(0, false);
@@ -233,7 +234,7 @@ public class BaseEditPanel extends JPanel {
         invalidValues.clear();
         dirtyOptions.clear();
         for (JComponent c : entryValues) c.setEnabled(false);
-        for (JLabel label : entryLabels) label.setForeground(Color.GRAY);
+        for (JLabel label : entryLabels) label.setForeground(UiTheme.MUTED);
         defaults.setEnabled(false);
         current.setEnabled(false);
         description.setText(message);
@@ -282,10 +283,10 @@ public class BaseEditPanel extends JPanel {
 
         if (valid) {
             invalidValues.remove(field);
-            field.setForeground(Color.BLACK);
+            field.setForeground(UiTheme.TEXT);
         } else {
             if (!invalidValues.contains(field)) invalidValues.add(field);
-            field.setForeground(Color.RED);
+            field.setForeground(UiTheme.DANGER);
         }
         updateApplyButton();
     }
