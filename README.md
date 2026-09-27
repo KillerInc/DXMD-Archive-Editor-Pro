@@ -2,8 +2,8 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.6.16  
-> **Runtime:** Java 11 or newer  
+> **Current version:** v0.7.1  
+> **Runtime:** Java 21 or newer  
 > **Primary platform:** Windows
 
 The project does **not** redistribute Deus Ex game archives.
@@ -39,12 +39,24 @@ Confirmed base-game editing is organized by purpose instead of one large Base Ga
 - **Inventory Stats** — confirmed item dimensions plus non-ammunition inventory stacks.
 - **Economy & Crafting** — confirmed shop prices and Weapon Parts crafting costs.
 - **XP Rewards** — all confirmed XP/reward editing in one place: hacking, passwords/keycodes, objectives, stealth, remote hacking, exploration, social/CASIE, combat and mechanical-target rewards.
-- **Base Fields** — the full base-game diagnostic/research table.
-- **DLC Fields** — installed DLC research/edit tabs with archive-derived nearby context.
+- **Research Inspector** — unified Base + DLC reverse-engineering workspace with archive-resource/chunk mapping, raw byte context, multiple integer/Float16/Float32 interpretations, comparison evidence, editable candidate boundaries and User ID annotations.
 
-**Base Fields** and **DLC Fields** are intentionally the last two top-level tabs. The old **Base Game** tab was removed after its confirmed edits were assigned to normal categories.
+The legacy **Base Fields** and **DLC Fields** research tabs were replaced in v0.7.1 by the unified Research Inspector. Confirmed editing stays in the five categorized tabs above.
 
 The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki pages, damage-testing material and supplied weapon-stat tables are used by the project as research evidence for identifying more archive fields, not as end-user application UI.
+
+## v0.7.1 Research Inspector
+
+v0.7.1 replaces the old flat Base Fields / DLC Fields research tables with a unified inspector. A changed-byte run is no longer assumed to define the real field boundary.
+
+- Parses each loaded DXMD `ARCH` directory and maps archive offsets to the real internal `.pc_resourcelib`, chunk number and resource-local offset.
+- Supports Base plus Assault, Classic, Enforcer, Intruder and Tactical DLC profiles from one archive selector.
+- Shows raw bytes around the selected candidate region and decodes the same selection as little-endian unsigned/signed integers, Float16, Float32 and Float64 where width permits.
+- Candidate start can be shifted ±8 bytes and width can be changed to 1/2/4/8 bytes. This exposes boundary mistakes such as a `80 3F` diff fragment that is actually the upper half of `00 00 80 3F` (`Float32 1.0`).
+- Research edits are allowed through Hex, integer, Float16 or Float32 interpretations. Boundary-changing edits receive an explicit warning and preserve a `.bak` first.
+- Existing confidence/evidence rules and comparison profiles remain visible. User ID annotations plus TSV import/export are retained.
+
+The full supplied OG validation mapped **2,546 / 2,546 Base rows** and **350 / 350 DLC rows** to internal archive resources with zero unmapped research rows.
 
 ## Normal edit behavior
 
@@ -164,7 +176,7 @@ SHA-256 identities are informational only; custom/modded archives are not reject
 
 ## User field identifications
 
-Base Fields and DLC Fields can export/import User ID annotations as TSV. Stable field IDs, offsets, original/current hex, built-in labels and the User ID are included so discoveries can be shared and promoted later when confirmed.
+The Research Inspector can export/import Base and DLC User ID annotations as TSV. Stable field IDs, offsets, original/current hex, built-in labels and the User ID are included so discoveries can be shared and promoted later when confirmed.
 
 ## Research status
 
@@ -186,10 +198,10 @@ Linux/macOS:
 ./build.sh
 ```
 
-The source targets Java 11 with `javac --release 11`. The resulting JAR is written to:
+The source targets Java 21 with `javac --release 21`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.6.16.jar
+dist/DXMD-Archive-Editor-Pro-v0.7.1.jar
 ```
 
 ## Credits
