@@ -1,42 +1,35 @@
-# DXMD Archive Editor Pro v0.6.14
+# DXMD Archive Editor Pro v0.6.15
 
-## Base + DLC field-confidence audit
+## Full raw-archive audit
 
-This release rebuilds the confidence model used by **Base Fields** and **DLC Fields**.
+This release integrates the complete supplied clean/original + modded archive dataset directly into the Base and DLC research models instead of relying only on the older reconstructed comparison tables.
 
-The previous research profiles inherited broad nearby labels from clean-vs-modded comparisons. A block named `DAMAGE_01`, for example, may contain the actual damage value, damage falloff/range pieces, upgrade metadata, Weapon Parts costs, display values, or neighboring record data. Seeing six changed bytes near `DAMAGE_01` is not evidence for six separate confirmed Damage fields.
+- 84 archive files audited across Base and all five DLC packs.
+- 78 physical modded-vs-original comparisons.
+- 48 deduplicated supplied comparison variants retained as derived evidence: 47 modified plus one exact-original control.
+- 7,222 changed byte-runs available to the confidence/evidence layer.
+- Raw comparison variants are now available in the Base/DLC research Compare lists.
+- No game or mod archives are redistributed; the repository stores derived hashes, offsets and deltas only.
 
-### New confidence rules
+## Corrections and new confirmations
 
-- **Confirmed** now means a focused comparison or established editor mapping isolates the field's effect.
-- Repeated `Accuracy`, `Damage`, `Rate of Fire`, `Recoil`, `Reload Speed`, `Scope`, `Silencer`, etc. rows are treated as **Suspected Weapon Stat components**, not confirmed copies of the same stat.
-- Candidate descriptions expose plausible sub-roles without pretending they are decoded: horizontal/vertical/spread accuracy, base damage/damage falloff/range, recoil axes/recovery, fire-rate/burst timing, reload timing, scope bonuses, suppressor penalties, and similar components.
-- Adam 3.0 provides a useful structural discriminator: short weapon-family values that it zeros while removing Weapon Parts upgrade costs are shown as **Strong suspected upgrade-parts-cost** controls rather than as the apparent stat-family name.
-- Hardcore Revival remains important evidence, but because it changes damage, range, accuracy, reload time, recoil and attachment bonuses together, Hardcore-only changes are not enough to confirm one exact sub-stat.
+- Corrects the `4D C7 1C 10` interpretation: it is a sniper/standard-reticle-related function, not the built-in silencer ID. Silence To The Guns replaces it with `26 AC CD 27`, the silencer function. The affected controls are now named **Standard-Reticle Function Slot / Silencer Override**.
+- Confirms the Elite Battle Rifle inventory-grid width from independent raw comparisons (`05→03`, with Favored Elites Plus `→02`).
+- Adds focused Base confirmations for the Icarus Reflexes takedown-power control, regeneration/energy controls, Grenade Launcher ammo heights, Experimental Augmentation gates, bolt-action overrides, silencer-enable toggles and reticle/silencer override slots.
+- Adds focused DLC confirmations from Silence To The Guns and the Micro-Assembler gate pattern while retaining contaminated Tactical bytes as suspected.
+- Keeps suppressor damage-debuff pairs strong-suspected: their effect family is isolated, but their exact A/B internal sub-roles are not independently decoded.
 
-### DLC audit
+## Audited confidence totals
 
-The old label-based DLC classifier could mark well over half the DLC research rows green. v0.6.14 removes that behavior.
+- Base: 2,546 rows; 233 confirmed; 48 strong-suspected; 29 comparison references.
+- DLC: 350 rows; 11 confirmed; 48 strong-suspected.
+- Confirmed DLC by pack: Assault 2, Classic 1, Enforcer 2, Intruder 1, Tactical 5.
 
-Only three DLC rows currently meet the strict confirmed threshold:
+## Restore safety
 
-- **Elite Combat Rifle Inventory Grid Control** — isolated by Master Inventory plus I Need The Edge/IPOAO comparisons.
-- **Elite Tranquilizer Rifle Inventory Grid Control** — isolated by Master Inventory plus I Need The Edge/IPOAO comparisons.
-- **Elite Tranquilizer Rifle Magazine Capacity** — I Need The Edge documents 10→4 and the Tactical DLC byte changes exactly `0A→04`.
+Selective restore uses the same raw-audit confidence model: confirmed rows restore to embedded clean values, while strong-suspected, suspected and unidentified research bytes remain untouched. `.bak` remains the exact whole-file recovery option.
 
-Additional rows are retained as strong-suspected where the evidence is useful but not precise enough for confirmed status, including the Elite Battle Rifle grid-control candidate and suppressor damage-penalty controls.
-
-### Base audit
-
-Existing established Base editor mappings remain confirmed. Broad generated weapon-stat families in Base Fields remain research data and now receive the same component/candidate treatment as DLC. The audit also identifies 2-byte weapon-family rows that Adam 3.0 zeros as strong upgrade-parts-cost candidates.
-
-### Restore safety
-
-Selective **Restore Editor Fields to Original** now uses the same strict confirmation test. It restores confirmed mappings only. Suspected/unidentified research bytes are intentionally left alone; exact `.bak` restore remains the recovery path for experimental research edits.
-
-## Audit documentation
-
-The repository now includes `FIELD_AUDIT_v0.6.14.md`, documenting the confirmation threshold, fixed audit counts, confirmed DLC offsets, strong-suspected candidates, and promotion rules for future discoveries.
+See `FIELD_AUDIT_v0.6.15.md` for the evidence rules and correction details.
 
 ## Requirements
 
