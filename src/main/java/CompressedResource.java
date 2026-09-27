@@ -17,7 +17,10 @@ final class CompressedResource {
             try (InputStream in = owner.getResourceAsStream(resource)) {
                 if (in == null) throw new FileNotFoundException(resource);
                 int n;
-                while ((n = in.read(buf)) >= 0) encoded.write(buf, 0, n);
+                while ((n = in.read(buf)) != -1) {
+                    if (n == 0) continue;
+                    encoded.write(buf, 0, n);
+                }
             }
         }
         byte[] gz = Base64.getMimeDecoder().decode(encoded.toByteArray());
