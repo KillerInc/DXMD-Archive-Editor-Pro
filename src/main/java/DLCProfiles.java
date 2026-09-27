@@ -16,6 +16,21 @@ public class DLCProfiles {
                 else if(x[0].equals("FIELD")){p.fields.add(new Field(Long.parseLong(x[1]),x[4],fromHex(x[2]),fromHex(x[3])));}
             }
         }
+        validateAndSort();
+    }
+    private static void validateAndSort() throws IOException {
+        for(Profile p:profiles.values()){
+            p.fields.sort(Comparator.comparingLong(f->f.offset));
+            long previousEnd=-1;
+            for(Field f:p.fields){
+                if(f.original==null||f.original.length==0)throw new IOException("Zero-length DLC field in "+p.name+" at "+f.offset);
+                if(f.modded==null||f.modded.length!=f.original.length)throw new IOException("DLC comparison length mismatch in "+p.name+" at "+f.offset);
+                long end=f.offset+f.original.length;
+                if(f.offset<0||end>p.size)throw new IOException("DLC field outside archive bounds in "+p.name+" at "+f.offset);
+                if(f.offset<previousEnd)throw new IOException("Overlapping/out-of-order DLC fields in "+p.name+" near "+f.offset);
+                previousEnd=end;
+            }
+        }
     }
     static byte[] fromHex(String s){byte[] b=new byte[s.length()/2];for(int i=0;i<b.length;i++)b[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);return b;}
     public static Set<String> names(){return profiles.keySet();}

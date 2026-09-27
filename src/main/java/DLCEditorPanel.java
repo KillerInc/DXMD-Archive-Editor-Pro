@@ -152,10 +152,9 @@ public class DLCEditorPanel extends JPanel {
                 JOptionPane.showMessageDialog(DLCEditorPanel.this,"Changes applied to "+shortName(profileName)+" and reloaded.\nBackup kept at:\n"+backup.getAbsolutePath());
             }catch(Exception ex){JOptionPane.showMessageDialog(DLCEditorPanel.this,ex.getMessage(),"Apply error",JOptionPane.ERROR_MESSAGE);}
         }
-        void restoreOriginalFields(){int a=JOptionPane.showConfirmDialog(DLCEditorPanel.this,"Restore editor-supported fields in "+shortName(profileName)+" to clean-game values?","Restore editor fields",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE);if(a!=JOptionPane.YES_OPTION)return;try{ArchiveRestore.restoreDlcEditorFields(selectedFile,profile);loadSelected();}catch(Exception ex){JOptionPane.showMessageDialog(DLCEditorPanel.this,ex.getMessage(),"Restore error",JOptionPane.ERROR_MESSAGE);}}
+        void restoreOriginalFields(){int a=JOptionPane.showConfirmDialog(DLCEditorPanel.this,"Restore confirmed editor fields in "+shortName(profileName)+" to clean-game values?\n\nSuspected/unidentified research bytes are left unchanged. Use Restore .bak to undo experimental research edits.","Restore editor fields",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE);if(a!=JOptionPane.YES_OPTION)return;try{ArchiveRestore.restoreDlcEditorFields(selectedFile,profile);loadSelected();}catch(Exception ex){JOptionPane.showMessageDialog(DLCEditorPanel.this,ex.getMessage(),"Restore error",JOptionPane.ERROR_MESSAGE);}}
         void restoreBackup(){if(!BackupManager.hasBackup(selectedFile)){JOptionPane.showMessageDialog(DLCEditorPanel.this,"No .bak exists for this archive yet.","Restore .bak",JOptionPane.INFORMATION_MESSAGE);return;}int a=JOptionPane.showConfirmDialog(DLCEditorPanel.this,"Replace this DLC archive with its exact .bak copy?","Restore exact backup",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE);if(a!=JOptionPane.YES_OPTION)return;try{BackupManager.restoreBackup(selectedFile);loadSelected();}catch(Exception ex){JOptionPane.showMessageDialog(DLCEditorPanel.this,ex.getMessage(),"Restore .bak error",JOptionPane.ERROR_MESSAGE);}}
 
-        String weaponName(){String n=profileName.toLowerCase(Locale.ROOT);if(n.contains("assault"))return "Battle Rifle";if(n.contains("classic"))return "Revolver";if(n.contains("enforcer"))return "Combat Rifle";if(n.contains("intruder"))return "Pistol";if(n.contains("tactical"))return "Tranquilizer Rifle";return "Weapon";}
         boolean isDangerous(DLCProfiles.Field f){return FieldConfidenceAudit.isDlcSaveRisk(profileName,f);}
 
         String nearbyContext(int row){
@@ -211,39 +210,6 @@ public class DLCEditorPanel extends JPanel {
             void useOriginal(){for(DLCProfiles.Field f:p.fields)f.current=f.original.clone();fireTableDataChanged();}
             void useReference(String n){for(DLCProfiles.Field f:p.fields){byte[] b=referenceBytes(f,n);if(b!=null)f.current=b.clone();}fireTableDataChanged();}
         }
-    }
-
-    static boolean isInventoryDimensionLabel(String label){
-        String u=label==null?"":label.toUpperCase(Locale.ROOT);
-        return u.contains("INVENTORY WIDTH")||u.contains("INVENTORY HEIGHT");
-    }
-
-    static boolean looksWeaponContext(String context){
-        if(context==null||context.isEmpty()||context.equals("No nearby readable identifier"))return false;
-        String u=context.toUpperCase(Locale.ROOT);
-        return u.contains("ACCURACY")||u.contains("AMMO")||u.contains("DAMAGE")||u.contains("FIRE_PATTERN")||u.contains("RATE_OF_FIRE")||u.contains("RECOIL")||u.contains("RELOAD")||u.contains("SCOPE")||u.contains("RIFLE")||u.contains("PISTOL")||u.contains("REVOLVER")||u.contains("TRANQUILIZER");
-    }
-
-    static String cleanLabel(String label){
-        if(label==null)return "";
-        return label.replaceFirst("\\s+#\\d+$","").trim();
-    }
-
-    static String semanticGroup(String label){
-        if(label==null)return null;
-        String u=cleanLabel(label).toUpperCase(Locale.ROOT);
-        if(u.startsWith("RAW FIELD"))return null;
-        if(u.startsWith("ACCURACY"))return "Accuracy";
-        if(u.startsWith("AMMO_CAPACITY"))return "Ammo Capacity";
-        if(u.startsWith("DAMAGE"))return "Damage";
-        if(u.startsWith("FIRE_PATTERN"))return "Fire Pattern";
-        if(u.startsWith("RATE_OF_FIRE")||u.equals("RATE_OF_F"))return "Rate of Fire";
-        if(u.startsWith("RECOIL"))return "Recoil";
-        if(u.startsWith("RELOAD_SPEED"))return "Reload Speed";
-        if(u.startsWith("SCOPE"))return "Scope";
-        if(u.startsWith("CHAFF"))return "Chaff";
-        if(u.startsWith("WEAPON_CORE")||u.startsWith("PREORDER"))return "Weapon Core";
-        return null;
     }
 
     static String hex(byte[] b){if(b==null)return "";StringBuilder s=new StringBuilder();for(byte v:b)s.append(String.format("%02X",v&255));return s.toString();}

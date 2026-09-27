@@ -169,7 +169,11 @@ final class FieldConfidenceAudit {
         return assessBase(f,nearbySpecific,context).evidence;
     }
 
-    static boolean isGenericWeaponFamilyLabel(String label) { return weaponFamily(label)!=null; }
+    static boolean isGenericWeaponFamilyLabel(String label) {
+        if (weaponFamily(label)!=null) return true;
+        String u=cleanGeneratedLabel(label).toUpperCase(Locale.ROOT);
+        return u.startsWith("CHAFF") || u.startsWith("WEAPON_CORE") || u.startsWith("PREORDER");
+    }
 
     static String weaponFamily(String label) {
         if (label==null) return null;

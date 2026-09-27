@@ -122,7 +122,7 @@ final class ArchiveContextResolver {
             for (Token t : block.tokens) {
                 if (!legacy.isEmpty() && !isGenericLegacy(legacy) && t.text.equalsIgnoreCase(legacy)) return t.text;
             }
-            if (field.category != null && field.category.startsWith("KNOWN")) {
+            if (FieldConfidenceAudit.isBaseConfirmed(field)) {
                 String matched = bestKnownToken(field, block);
                 if (matched != null) return matched;
             }
@@ -151,7 +151,7 @@ final class ArchiveContextResolver {
             double score = -d / 8.0;
             int overlap = overlap(hint, b.words);
             score += overlap * 45.0;
-            if (field.category != null && field.category.startsWith("KNOWN")) score += overlap * 20.0;
+            if (FieldConfidenceAudit.isBaseConfirmed(field)) score += overlap * 20.0;
             score += Math.min(8, b.tokens.size()) * 1.5;
 
             if (!generic) {

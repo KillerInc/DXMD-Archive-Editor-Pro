@@ -37,7 +37,10 @@ public final class FieldIdentificationIO {
         if (p==null) return; File f=chooseSave(parent,"base-field-identifications.tsv"); if(f==null)return;
         try(PrintWriter w=new PrintWriter(new OutputStreamWriter(new FileOutputStream(f),StandardCharsets.UTF_8))){
             writeHeader(w);
-            for(BaseResearchProfiles.Field x:p.fields) w.println(String.join("\t","BASE",safe(p.name),safe(baseFieldId(x)),Long.toString(x.offset),Integer.toString(x.original.length),BaseFieldsPanel.hex(x.original),BaseFieldsPanel.hex(x.current),safe(x.category),safe(x.label),safe(x.identifiedAs)));
+            for(BaseResearchProfiles.Field x:p.fields) {
+                FieldConfidenceAudit.Assessment a=FieldConfidenceAudit.assessBase(x,null,"");
+                w.println(String.join("\t","BASE",safe(p.name),safe(baseFieldId(x)),Long.toString(x.offset),Integer.toString(x.original.length),BaseFieldsPanel.hex(x.original),BaseFieldsPanel.hex(x.current),safe(a.confidence.name()),safe(a.name+" | raw="+x.label),safe(x.identifiedAs)));
+            }
             JOptionPane.showMessageDialog(parent,"Saved field identifications to:\n"+f.getAbsolutePath(),"Identifications saved",JOptionPane.INFORMATION_MESSAGE);
         }catch(Exception ex){error(parent,"Save identifications",ex);}
     }
@@ -46,15 +49,18 @@ public final class FieldIdentificationIO {
         if(p==null)return; File f=chooseSave(parent,profileName.replace(".archive","")+"-field-identifications.tsv"); if(f==null)return;
         try(PrintWriter w=new PrintWriter(new OutputStreamWriter(new FileOutputStream(f),StandardCharsets.UTF_8))){
             writeHeader(w);
-            for(DLCProfiles.Field x:p.fields) w.println(String.join("\t","DLC",safe(profileName),safe(dlcFieldId(profileName,x)),Long.toString(x.offset),Integer.toString(x.original.length),DLCEditorPanel.hex(x.original),DLCEditorPanel.hex(x.current),safe(DLCEditorPanel.semanticGroup(x.label)),safe(x.label),safe(x.identifiedAs)));
+            for(DLCProfiles.Field x:p.fields) {
+                FieldConfidenceAudit.Assessment a=FieldConfidenceAudit.assessDlc(profileName,x,"");
+                w.println(String.join("\t","DLC",safe(profileName),safe(dlcFieldId(profileName,x)),Long.toString(x.offset),Integer.toString(x.original.length),DLCEditorPanel.hex(x.original),DLCEditorPanel.hex(x.current),safe(a.confidence.name()),safe(a.name+" | raw="+x.label),safe(x.identifiedAs)));
+            }
             JOptionPane.showMessageDialog(parent,"Saved field identifications to:\n"+f.getAbsolutePath(),"Identifications saved",JOptionPane.INFORMATION_MESSAGE);
         }catch(Exception ex){error(parent,"Save identifications",ex);}
     }
 
     private static void writeHeader(PrintWriter w){
-        w.println("# DXMD Archive Editor Pro field-identification export v1");
+        w.println("# DXMD Archive Editor Pro field-identification export v2");
         w.println("# Edit the IdentifiedAs column if desired. Offset is included for verification but remains hidden in the editor UI.");
-        w.println("Scope\tArchive\tFieldID\tOffset\tLength\tOriginalHex\tCurrentHex\tBuiltInGroup\tBuiltInLabel\tIdentifiedAs");
+        w.println("Scope\tArchive\tFieldID\tOffset\tLength\tOriginalHex\tCurrentHex\tConfidence\tBuiltInAssessment\tIdentifiedAs");
     }
 
     public static int importBase(Component parent,BaseResearchProfiles.Profile p){

@@ -112,6 +112,12 @@ v0.6.14 audits the meaning of **Known / confirmed** across both Base Fields and 
 - Evidence for each assessment is available as a table-cell tooltip. Strong-suspected rows use a separate visual state from confirmed green rows.
 - **Restore Editor Fields to Original** now follows the same strict confidence policy. DLC research/suspected rows are not silently rewritten by selective restore; use the exact `.bak` restore to undo experimental research edits.
 
+### v0.6.14 confidence counts
+
+The static evidence audit contains **2,553 Base research rows** and **342 DLC research rows**. Base has **217 confirmed mappings** (primarily established XP, economy, inventory and player controls) and **23 strong-suspected weapon-upgrade cost candidates**. Only **2 Base weapon-stat rows** are confirmed as direct weapon stats: the Tranquilizer Rifle and Lancer Rifle magazine capacities.
+
+Across all five DLC packs, only **3 / 342 rows** currently meet the confirmed threshold. Another **47** are strong-suspected from focused or structural comparison evidence. Remaining rows stay suspected or unidentified; archive-derived context may improve their description but never promotes them to confirmed by proximity alone.
+
 ## DLC Fields
 
 Installed DLC packs are displayed as individual tabs. Missing packs are normal and are not created by the tool. DLC research views support original/current values, comparison profiles, presets, User ID import/export, backups and restore functions.
