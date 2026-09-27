@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.7.1  
+> **Current version:** v0.7.2  
 > **Runtime:** Java 21 or newer  
 > **Primary platform:** Windows
 
@@ -44,6 +44,12 @@ Confirmed base-game editing is organized by purpose instead of one large Base Ga
 The legacy **Base Fields** and **DLC Fields** research tabs were replaced in v0.7.1 by the unified Research Inspector. Confirmed editing stays in the five categorized tabs above.
 
 The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki pages, damage-testing material and supplied weapon-stat tables are used by the project as research evidence for identifying more archive fields, not as end-user application UI.
+
+## v0.7.2 Dark research UI
+
+v0.7.2 restyles the complete Swing application to match the Research Inspector mockup: dark navy work surfaces, teal/cyan selection accents, dark table headers and byte-inspector panes, subdued borders, and consistent controls across both the confirmed-stat tabs and Research Inspector. The application opens directly on Research Inspector while retaining Weapon Stats, Player Stats, Inventory Stats, Economy & Crafting and XP Rewards as normal confirmed-edit tabs.
+
+The supplied Dawn/DXMD Python extractor was also tested against the clean archives as an independent structural cross-check. Its `ARCH` parser agrees with the Java archive index on the real container layout and supports linked archives, HeaderLib/BIN1 structures and resource-library reconstruction. It remains a research/reference tool; the released editor has no Python runtime dependency.
 
 ## v0.7.1 Research Inspector
 
@@ -201,7 +207,7 @@ Linux/macOS:
 The source targets Java 21 with `javac --release 21`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.7.1.jar
+dist/DXMD-Archive-Editor-Pro-v0.7.2.jar
 ```
 
 ## Credits
