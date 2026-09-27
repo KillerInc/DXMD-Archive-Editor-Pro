@@ -13,8 +13,12 @@ public final class BackupManager {
     public static File ensureBackup(File archive) throws IOException {
         if (archive == null || !archive.isFile()) throw new FileNotFoundException("Archive not found.");
         File backup = backupFile(archive);
+        if (backup.exists() && !backup.isFile())
+            throw new IOException("Backup path exists but is not a file: " + backup.getAbsolutePath());
         if (!backup.exists()) {
             Files.copy(archive.toPath(), backup.toPath(), StandardCopyOption.COPY_ATTRIBUTES);
+            if (!backup.isFile() || backup.length() != archive.length())
+                throw new IOException("Backup verification failed: " + backup.getAbsolutePath());
         }
         return backup;
     }
@@ -45,7 +49,7 @@ public final class BackupManager {
         }
     }
 
-    private static final Map<String,String> KNOWN = new HashMap<>();
+    private static final Map<String, String> KNOWN = new HashMap<>();
     static {
         KNOWN.put("a9792586ae408e48fa24f0b4fbdb7fc6b5cb09b9a5b9271dc80534c84a13fae4", "Known Original");
         KNOWN.put("45908aaa0437bbc9b6e3957ce0788fe069b1abebd482f20d89fced915f553eb3", "Hardcore Normal");
