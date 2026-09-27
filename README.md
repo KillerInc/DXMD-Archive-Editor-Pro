@@ -108,14 +108,14 @@ v0.6.15 compares the complete supplied clean/original archive set directly with 
 
 Current audited totals are **2,546 Base rows / 233 confirmed / 48 strong-suspected** and **350 DLC rows / 11 confirmed / 48 strong-suspected**. A key correction is that `4D C7 1C 10` is a sniper/standard-reticle-related function rather than the silencer ID; Silence To The Guns replaces it with `26 AC CD 27`, the built-in silencer function. See **[FIELD_AUDIT_v0.6.15.md](FIELD_AUDIT_v0.6.15.md)** for the evidence and promotion rules.
 
-## v0.6.14 field-confidence audit
+## v0.6.15 raw-archive field-confidence audit
 
-v0.6.14 audits the meaning of **Known / confirmed** across both Base Fields and DLC Fields. Generated labels such as `DAMAGE_01`, `ACCURACY_01`, `RATE_OF_FIRE_02`, `RECOIL_01`, and numbered variants are structural research hints, not proof that every nearby byte is that exact stat.
+v0.6.15 extends the confidence audit across every supplied raw OG/modded archive and applies the resulting focused mappings to both Base Fields and DLC Fields. Generated labels such as `DAMAGE_01`, `ACCURACY_01`, `RATE_OF_FIRE_02`, `RECOIL_01`, and numbered variants are structural research hints, not proof that every nearby byte is that exact stat.
 
 - A repeated weapon-stat family is no longer promoted to confirmed simply because its generated label contains `Damage`, `Accuracy`, `Recoil`, etc.
 - Weapon-family rows are shown as suspected components with narrower candidate roles such as horizontal/vertical/spread, base-damage/falloff/range, recoil axis/recovery, fire-rate/burst timing, reload timing, scope bonus, and suppressor penalty.
 - Adam 3.0 rows that are short values changed to zero are called out as **strong suspected Weapon Parts upgrade-cost controls** when they match the documented removal of weapon-upgrade parts costs.
-- DLC confirmation now requires focused cross-mod isolation. Only three DLC rows currently meet that bar: Elite Combat Rifle inventory-grid control, Elite Tranquilizer inventory-grid control, and Elite Tranquilizer magazine capacity.
+- DLC confirmation now requires focused cross-mod isolation. The full raw audit raises 11 DLC rows to confirmed where independent or focused comparisons isolate the effect, including the Elite Battle Rifle grid width, silencer/reticle function slots, and three Micro-Assembler experimental/overclock markers.
 - Focused comparisons from I Need The Edge and Master Inventory are used to identify inventory-grid/capacity controls; broad Hardcore Revival changes remain supporting evidence only because Hardcore changes many weapon properties together.
 - Evidence for each assessment is available as a table-cell tooltip. Strong-suspected rows use a separate visual state from confirmed green rows.
 - **Restore Editor Fields to Original** now follows the same strict confidence policy. DLC research/suspected rows are not silently rewritten by selective restore; use the exact `.bak` restore to undo experimental research edits.

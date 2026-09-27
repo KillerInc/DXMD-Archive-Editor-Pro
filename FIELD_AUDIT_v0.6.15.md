@@ -1,59 +1,58 @@
-# DXMD Archive Editor Pro — Field Confidence Audit v0.6.15
+# DXMD Archive Editor Pro — Field Audit v0.6.15
 
-v0.6.15 replaces the reconstructed comparison baseline with an audit made directly from the complete supplied clean/original and modded archive set.
+## Authoritative input set
 
-## Authoritative dataset
+The audit used the complete supplied archive collection: clean Base + all five clean DLC archives and every supplied modded archive copy. Files were SHA-256 fingerprinted before comparison so duplicate copies did not inflate evidence.
 
-- 84 archive files inspected.
-- 6 clean originals: Base plus Assault, Classic, Enforcer, Intruder and Tactical DLC.
-- 78 physical modded-vs-original comparisons.
-- 48 SHA-256-deduplicated supplied variants in the retained evidence set; 47 are modified and one is an exact-original control.
-- 7,222 distinct changed byte-runs retained as derived evidence.
-- No game or mod archive is redistributed by this repository; only hashes, offsets and changed-byte evidence are retained.
+- 84 archive files
+- 6 clean OG archives
+- 78 modded-vs-OG comparisons
+- 48 deduplicated comparison variants
+- 47 variants with actual byte changes
+- 1 exact-OG control
+- 7,222 changed byte-runs
+
+The runtime editor stores the curated conclusions and clean archive fingerprints, not copyrighted game/mod archive payloads or the full raw diff matrix.
 
 ## Confidence rules
 
-**Confirmed** requires a focused comparison, independent agreement between focused mods, or an already established editor mapping. **Strong suspected** means the effect family is isolated but the exact internal sub-role is not. **Suspected** means useful structural or contextual evidence exists but is not sufficient to identify the exact control. **Unidentified** remains the default when evidence does not isolate a role.
+**Confirmed** requires a focused comparison, independent matching comparisons, explicit modding documentation tied to the changed value, or an already established editor mapping.
 
-Generated nearby families such as `DAMAGE_01`, `ACCURACY_01`, `RATE_OF_FIRE_02` and `RECOIL_01` are never proof by themselves. Hardcore Revival remains valuable coverage but changes too many weapon properties simultaneously to isolate most sub-fields.
+**Strong suspected** means the effect family is well isolated but the exact internal sub-role remains unresolved, or a strong structural pattern exists without direct isolation.
 
-## v0.6.15 audited counts
+**Suspected** means useful contextual/comparison evidence exists but multiple interpretations remain plausible.
 
-- Base: 2,546 non-overlapping field records, 233 confirmed, 48 strong-suspected.
-- Base comparison references: 29 after integrating all raw variants with the existing research references.
-- DLC: 350 non-overlapping field records, 11 confirmed, 48 strong-suspected.
-- Confirmed DLC by pack: Assault 2, Classic 1, Enforcer 2, Intruder 1, Tactical 5.
+**Unidentified** means the current evidence does not justify a semantic label.
 
-The row totals changed because exact multi-byte mappings now replace older overlapping fragments instead of being layered on top of them.
+Nearby strings and generated families such as `DAMAGE_01`, `ACCURACY_01`, `RATE_OF_FIRE_02`, etc. never promote a row by themselves.
 
-## Corrections from v0.6.14
+## Important corrections
 
-### `4D C7 1C 10` is not the silencer-function ID
+### `4D C7 1C 10`
 
-The supplied Silence To The Guns guide identifies `4D C7 1C 10` as a sniper/standard-reticle-related function. The mod replaces it with `26 AC CD 27`, which is the built-in silencer function ID. v0.6.15 therefore labels these rows **Standard-Reticle Function Slot / Silencer Override**. The previous interpretation that `4D C7 1C 10` itself was a silencer ID was incorrect.
+The supplied Silence To The Guns guide explicitly describes `4D C7 1C 10` as a sniper/standard-reticle-related function. The mod replaces that function slot with `26 AC CD 27`, which is the built-in silencer function. Therefore `4D C7 1C 10` must not itself be labeled as a built-in silencer ID.
+
+### Takedown control
+
+Base offset 7413173 (`22 C6 AB C4` -> zero in Icarus Reflexes) is confirmed as a takedown power-consumption control/identifier. It is distinct from the numeric takedown energy-cost float at offset 7413189.
 
 ### Elite Battle Rifle inventory width
 
-The clean Assault archive byte at offset `54331` is `05`. Independent inventory-focused archives change the same byte `05→03`, while Favored Elites Plus changes it to `02`. This is now confirmed as the Elite Battle Rifle inventory-grid width. One supplied README describes the vanilla width as 6; the clean archive byte is authoritative for the stored value and the documentation discrepancy is retained rather than forcing the archive to match the prose.
+Assault offset 54331 is confirmed as the Elite Battle Rifle inventory-grid width. Independent supplied archives make the same focused edit (OG byte 5 -> 3), while Favored Elites Plus changes the same byte to 2. A README describes vanilla width as 6; the clean archive byte is authoritative for the stored value.
 
-## Newly strengthened Base mappings
+### Micro-Assembler
 
-Focused comparisons now confirm the Takedown Power Consumption control, Energy Auto-Regeneration Limit, Biocell Energy Gain, Takedown Energy Cost, four Grenade Launcher ammo-height controls, ten Experimental Augmentation gates, documented bolt-action override toggles, built-in-silencer enable toggles, and the reticle-function slots used by Silence To The Guns for silencer overrides.
+Tactical offsets 112348, 113060 and 113820 are confirmed `0ACC4075` experimental/overclock gate markers. Other changes in the supplied Micro-Assembler archive are treated as contamination unless independently supported.
 
-The Takedown Power Consumption field is deliberately called a **control**, not a numeric cost: Icarus Reflexes changes the isolated four-byte value to zero, but its raw value behaves like an internal identifier/control. The separate float at `7413189` remains the confirmed Takedown Energy Cost.
+## v0.6.15 static baseline
 
-## Suppressor debuff fields
+Base: 2,546 rows — 233 confirmed / 48 strong-suspected / 1,370 suspected / 895 unidentified.
 
-I Need The Edge v1.2 isolates five Base two-component pairs and corresponding Enforcer/Intruder DLC pairs while its documented change removes suppressor damage debuffs. These are strong evidence for **Suppressor Damage-Debuff Components A/B**, but the internal distinction between the two components is not independently decoded, so they remain strong-suspected rather than receiving invented sub-stat names.
+DLC:
+- Assault: 52 rows — 2 confirmed / 8 strong-suspected
+- Classic: 52 rows — 1 confirmed / 10 strong-suspected
+- Enforcer: 72 rows — 2 confirmed / 12 strong-suspected
+- Intruder: 90 rows — 1 confirmed / 11 strong-suspected
+- Tactical: 84 rows — 5 confirmed / 7 strong-suspected
 
-## Micro-Assembler contamination handling
-
-Three Tactical `0ACC4075` markers changed to zero are confirmed as Micro-Assembler Experimental/Overclock gates because the supplied mod documentation identifies that behavior and the same marker structure is independently established by Adam 2.0. Tactical offsets `107324` and `108070` remain suspected: the supplied Micro-Assembler archive also carries unrelated Elite Tranquilizer inventory/magazine edits, so those bytes are not attributed to Micro-Assembler without independent evidence.
-
-## Restore behavior
-
-Selective **Restore Editor Fields to Original** follows this same confidence policy. Confirmed mappings are restored; strong-suspected, suspected and unidentified research bytes are left untouched. Tests against copies of the real clean Base and Assault archives verified that newly confirmed mappings restore correctly while research bytes remain unchanged. Exact `.bak` restoration remains the whole-file recovery path.
-
-## Promotion rule
-
-Future fields should move to Confirmed only when another focused archive, documentation plus an isolated byte change, or equivalent independent evidence removes the ambiguity. Proximity to a readable name or membership in a generated weapon family is not enough.
+Selective restore is restricted to confirmed rows.

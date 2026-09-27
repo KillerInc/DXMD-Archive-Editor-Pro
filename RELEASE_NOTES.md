@@ -2,35 +2,37 @@
 
 ## Full raw-archive audit
 
-This release integrates the complete supplied clean/original + modded archive dataset directly into the Base and DLC research models instead of relying only on the older reconstructed comparison tables.
+v0.6.15 rebuilds the field-confidence baseline from the complete supplied clean + modded archive set instead of relying only on the earlier embedded comparison extracts.
 
-- 84 archive files audited across Base and all five DLC packs.
-- 78 physical modded-vs-original comparisons.
-- 48 deduplicated supplied comparison variants retained as derived evidence: 47 modified plus one exact-original control.
-- 7,222 changed byte-runs available to the confidence/evidence layer.
-- Raw comparison variants are now available in the Base/DLC research Compare lists.
-- No game or mod archives are redistributed; the repository stores derived hashes, offsets and deltas only.
+- 84 archive files inspected: 6 clean OG archives and 78 modded archive copies.
+- Exact SHA-256 deduplication produces 48 comparison variants: 47 modified variants plus one exact-OG control.
+- 7,222 changed byte-runs were compared across Base and all five DLC packs.
+- Broad or duplicated weapon-family labels remain suspected unless a focused comparison isolates the effect.
 
-## Corrections and new confirmations
+## Corrections and newly confirmed mappings
 
-- Corrects the `4D C7 1C 10` interpretation: it is a sniper/standard-reticle-related function, not the built-in silencer ID. Silence To The Guns replaces it with `26 AC CD 27`, the silencer function. The affected controls are now named **Standard-Reticle Function Slot / Silencer Override**.
-- Confirms the Elite Battle Rifle inventory-grid width from independent raw comparisons (`05→03`, with Favored Elites Plus `→02`).
-- Adds focused Base confirmations for the Icarus Reflexes takedown-power control, regeneration/energy controls, Grenade Launcher ammo heights, Experimental Augmentation gates, bolt-action overrides, silencer-enable toggles and reticle/silencer override slots.
-- Adds focused DLC confirmations from Silence To The Guns and the Micro-Assembler gate pattern while retaining contaminated Tactical bytes as suspected.
-- Keeps suppressor damage-debuff pairs strong-suspected: their effect family is isolated, but their exact A/B internal sub-roles are not independently decoded.
+- Corrects `4D C7 1C 10`: the Silence To The Guns guide identifies it as a sniper/standard-reticle-related function. The mod replaces that slot with `26 AC CD 27`, the built-in silencer function. The editor no longer labels the original value itself as a silencer ID.
+- Clarifies the Icarus Reflexes field at Base offset 7413173 as a **Takedown Power Consumption Control**, not a numeric energy-cost value.
+- Confirms Elite Battle Rifle inventory width at Assault offset 54331 from independent inventory-focused comparisons.
+- Confirms focused Silence To The Guns function/toggle mappings in Base and DLC weapon records.
+- Confirms the three Tactical Micro-Assembler `0ACC4075` experimental/overclock gate markers while leaving contaminated neighboring Tactical changes suspected.
+- Keeps suppressor damage-debuff pairs strong-suspected because the effect family is isolated but the exact A/B sub-role is not.
 
-## Audited confidence totals
+## Confidence baseline
 
-- Base: 2,546 rows; 233 confirmed; 48 strong-suspected; 29 comparison references.
-- DLC: 350 rows; 11 confirmed; 48 strong-suspected.
-- Confirmed DLC by pack: Assault 2, Classic 1, Enforcer 2, Intruder 1, Tactical 5.
+Base Fields: 2,546 rows — 233 confirmed, 48 strong-suspected, 1,370 suspected, 895 unidentified.
+
+DLC confirmed / strong-suspected:
+- Assault: 2 / 8
+- Classic: 1 / 10
+- Enforcer: 2 / 12
+- Intruder: 1 / 11
+- Tactical: 5 / 7
 
 ## Restore safety
 
-Selective restore uses the same raw-audit confidence model: confirmed rows restore to embedded clean values, while strong-suspected, suspected and unidentified research bytes remain untouched. `.bak` remains the exact whole-file recovery option.
-
-See `FIELD_AUDIT_v0.6.15.md` for the evidence rules and correction details.
+Selective **Restore Editor Fields to Original** uses the same confidence policy. Confirmed raw-audit mappings restore to clean bytes; strong-suspected, suspected and unidentified research bytes are left untouched. `.bak` remains the exact whole-file recovery path.
 
 ## Requirements
 
-Java 11 or newer. Keep game archives and saves backed up when testing research fields, especially inventory-dimension controls.
+Java 11 or newer. Back up game archives and saves before testing archive edits, especially inventory-dimension changes.
