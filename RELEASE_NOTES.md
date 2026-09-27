@@ -1,18 +1,18 @@
-# DXMD Archive Editor Pro v0.7.4
+# DXMD Archive Editor Pro v0.7.5
 
-## Readability
+## Animated archive loading
 
-- Fixes remaining black text in the confirmed-stat tabs.
-- Enabled option labels now use the light dark-theme text color.
-- Valid numeric values use the light theme text; invalid values use the warning color.
-- Disabled labels use the muted theme color.
+- The Loading Archive bar now uses a continuously animated indeterminate state while background archive preparation is running.
+- A small `Working...` text animation provides a second obvious activity cue even if the platform's progress-bar animation is subtle.
+- Status text still changes through resolving files, reading the archive directory, indexing resources, scanning identifiers and mapping research fields.
+- At completion the bar switches to determinate mode, fills to 100% and briefly shows `Ready`.
+- The dark theme now explicitly themes `JProgressBar`, with a faster repaint interval/cycle.
 
-## Loading Archive progress
+## Download packaging
 
-- Adds a small dark-themed modal loading popup with a 0–100% progress bar.
-- Shows stages for resolving game files, reading the ARCH directory, indexing resources, scanning readable identifiers, mapping research fields and populating editor views.
-- Expensive Base research preparation runs in a `SwingWorker`, so the progress UI stays responsive.
-- Startup auto-detection uses the same loading popup.
-- Parsed `ArchiveResourceIndex` data is cached and reused when the Research Inspector opens the same unchanged archive.
+- Preferred download: `DXMD-Archive-Editor-Pro-v0.7.5.zip`.
+- ZIP contains the JAR, `DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256`, and `VERIFY.txt`.
+- The direct JAR remains attached to the GitHub release.
+- Browser reputation warnings can still occur for unsigned/uncommon Java applications; a trusted code-signing certificate would be required for a stronger publisher-reputation signal.
 
 Java 21 or newer remains required.
