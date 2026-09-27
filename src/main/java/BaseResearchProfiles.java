@@ -32,9 +32,10 @@ public class BaseResearchProfiles {
             while((line=br.readLine())!=null) parseBaseLine(line);
         }
         // v0.6.9 decoded XP/reward records replace the older broad diff fragments.
-        // Keep this overlay active in every later build; dropping it regresses Base Fields
-        // back to misleading nearby-string labels such as repeated combat_xp_* fragments.
         applyPatch("/base_research_v069_patch.tsv.gz.b64");
+        // v0.6.15 overlays focused mappings and comparison references derived from
+        // the complete supplied OG + modded raw archive set.
+        RawArchiveAuditCatalog.applyBase(profile);
         validateAndSort();
     }
 
