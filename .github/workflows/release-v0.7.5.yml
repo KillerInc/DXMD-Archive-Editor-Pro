@@ -1,0 +1,123 @@
+name: Release v0.7.5 Animated Loading
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Update v0.7.5 documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.4', '> **Current version:** v0.7.5')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.4.jar','dist/DXMD-Archive-Editor-Pro-v0.7.5.jar')
+          anchor='## v0.7.4 loading/readability pass\n'
+          section='''## v0.7.5 animated loading / packaged download\n\nv0.7.5 keeps the Loading Archive dialog visibly active during first-load work. The progress bar uses Swing's indeterminate animation while the background worker is running and the bar text also cycles `Working`, `Working.`, `Working..`, `Working...`; the stage label continues to report the current operation. When loading finishes, the bar switches to determinate mode and completes at 100%.\n\nThe preferred release download is now a ZIP containing the Java 21 JAR, a SHA-256 checksum file and verification instructions. The direct JAR remains available. This packaging can reduce browser false positives for uncommon standalone JAR downloads, but it is not a substitute for a trusted platform code-signing certificate.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.5\n\n## Animated archive loading\n\n- The Loading Archive bar now uses a continuously animated indeterminate state while background archive preparation is running.\n- A small `Working...` text animation provides a second obvious activity cue even if the platform's progress-bar animation is subtle.\n- Status text still changes through resolving files, reading the archive directory, indexing resources, scanning identifiers and mapping research fields.\n- At completion the bar switches to determinate mode, fills to 100% and briefly shows `Ready`.\n- The dark theme now explicitly themes `JProgressBar`, with a faster repaint interval/cycle.\n\n## Download packaging\n\n- Preferred download: `DXMD-Archive-Editor-Pro-v0.7.5.zip`.\n- ZIP contains the JAR, `DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256`, and `VERIFY.txt`.\n- The direct JAR remains attached to the GitHub release.\n- Browser reputation warnings can still occur for unsigned/uncommon Java applications; a trusted code-signing certificate would be required for a stronger publisher-reputation signal.\n\nJava 21 or newer remains required.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Sanity test v0.7.5
+        shell: bash
+        run: |
+          cat > build/V075SourceSanity.java <<'JAVA'
+          import java.nio.file.*;
+          public class V075SourceSanity {
+            public static void main(String[] args) throws Exception {
+              if (BaseResearchProfiles.get().fields.size()!=2546) throw new RuntimeException("Base profile count changed");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              if (dlc!=350) throw new RuntimeException("DLC profile count changed: "+dlc);
+              String launcher=Files.readString(Path.of("src/main/java/Launcher.java"));
+              if (!launcher.contains("bar.setIndeterminate(true)")) throw new RuntimeException("Indeterminate loading animation missing");
+              if (!launcher.contains("new Timer(260")) throw new RuntimeException("Working-dot animation missing");
+              if (!launcher.contains("bar.setString(\"Ready\")")) throw new RuntimeException("Loading completion state missing");
+              String theme=Files.readString(Path.of("src/main/java/UiTheme.java"));
+              if (!theme.contains("ProgressBar.cycleTime") || !theme.contains("c instanceof JProgressBar")) throw new RuntimeException("ProgressBar theme missing");
+              String base=Files.readString(Path.of("src/main/java/BaseEditPanel.java"));
+              if (base.contains("Color.BLACK")) throw new RuntimeException("BaseEditPanel black-text regression");
+              if (!HalfFloat.formatLE(new byte[]{(byte)0x80,0x40}).equals("2.25")) throw new RuntimeException("Float16 regression");
+              System.out.println("v0.7.5 sanity OK: base=2546 dlc=350");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V075SourceSanity.java
+          java -Djava.awt.headless=true -cp build/classes V075SourceSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.5.jar | grep -q '^Launcher.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.5.jar | grep -q '^UiTheme.class$'
+
+      - name: Package preferred ZIP and checksums
+        shell: bash
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.7.5.jar'
+          HASH="$(sha256sum "$JAR" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" 'DXMD-Archive-Editor-Pro-v0.7.5.jar' > dist/DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256
+          rm -rf build/release-package
+          mkdir -p build/release-package
+          cp "$JAR" dist/DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256 build/release-package/
+          cat > build/release-package/VERIFY.txt <<'TXT'
+          DXMD Archive Editor Pro v0.7.5 - verification
+
+          This release requires Java 21 or newer.
+
+          Windows SHA-256 verification:
+            certutil -hashfile DXMD-Archive-Editor-Pro-v0.7.5.jar SHA256
+
+          Compare the result with DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256.
+
+          The ZIP/JAR is not Authenticode-signed. Browser/SmartScreen reputation warnings can occur for uncommon unsigned Java downloads even when the checksum is correct.
+          TXT
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.5.zip DXMD-Archive-Editor-Pro-v0.7.5.jar DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256 VERIFY.txt)
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.5.jar
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.5.zip
+
+      - name: Commit documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md RELEASE_NOTES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Document v0.7.5 animated loading and ZIP packaging"
+            git push
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.5
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.5.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.5.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256
+
+      - name: Create v0.7.5 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.5
+          name: DXMD Archive Editor Pro v0.7.5
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.5.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.5.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256
