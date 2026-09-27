@@ -22,7 +22,7 @@ public class Launcher {
         SwingUtilities.invokeLater(() -> {
             try {
                 UiTheme.install();
-                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.7");
+                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.8");
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setLayout(new BorderLayout(6, 6));
 

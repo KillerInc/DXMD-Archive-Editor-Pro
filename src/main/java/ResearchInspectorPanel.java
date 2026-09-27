@@ -81,7 +81,7 @@ public class ResearchInspectorPanel extends JPanel {
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         configureColumns();
         JScrollPane listScroll = new JScrollPane(table);
-        listScroll.setPreferredSize(new Dimension(720, 600));
+        listScroll.setPreferredSize(new Dimension(650, 600));
 
         rawContext.setEditable(false);
         rawContext.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
@@ -587,7 +587,7 @@ public class ResearchInspectorPanel extends JPanel {
 
     private void configureColumns() {
         if (table.getColumnCount() < 1) return;
-        int[] w = {125, 360, 150, 220, 430, 130, 280, 75, 120, 110};
+        int[] w = {125, 360, 150};
         for (int i = 0; i < table.getColumnCount() && i < w.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(w[i]);
         for (int i = 0; i < table.getColumnCount(); i++) sorter.setSortable(i, false);
@@ -647,8 +647,7 @@ public class ResearchInspectorPanel extends JPanel {
     private static JTextField readonly() { JTextField f = new JTextField(); f.setEditable(false); return f; }
 
     private final class ResearchModel extends AbstractTableModel {
-        private final String[] columns = {"Status", "Attribute", "User ID", "Context", "Logical Resource",
-                "Payload Offset", "Internal Resource", "Chunk", "Resource Offset", "Archive Offset"};
+        private final String[] columns = {"Status", "Attribute", "User ID"};
         private ArrayList<Row> rows = new ArrayList<>();
 
         void setRows(ArrayList<Row> r) {
@@ -662,19 +661,10 @@ public class ResearchInspectorPanel extends JPanel {
 
         public Object getValueAt(int r, int c) {
             Row row = rows.get(r);
-            ArchiveResourceIndex.Location loc = index == null ? null : index.locate(row.offset);
-            LogicalResourceCatalog.LogicalResource lr = logical(loc);
             return switch (c) {
                 case 0 -> confidence(row);
                 case 1 -> displayName(row);
                 case 2 -> userId(row);
-                case 3 -> row.context;
-                case 4 -> lr == null ? "" : lr.logicalPath();
-                case 5 -> lr == null || loc == null ? "" : String.format("+0x%X", lr.payloadOffset(loc.resourceOffset()));
-                case 6 -> loc == null ? "" : loc.resourceName();
-                case 7 -> loc == null ? "" : loc.chunkIndex();
-                case 8 -> loc == null ? "" : loc.resourceOffset();
-                case 9 -> row.offset;
                 default -> "";
             };
         }
