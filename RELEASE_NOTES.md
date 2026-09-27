@@ -1,11 +1,14 @@
-# DXMD Archive Editor Pro v0.7.9
+# DXMD Archive Editor Pro v0.7.10
 
-## Comparison Evidence alignment fix
+## Concise Research Inspector attributes
 
-- Replaces the right-side Comparison Evidence pseudo-table with a real `JTable`.
-- Columns are now **Source**, **Hex**, and **Decoded** with stable column boundaries.
-- Fixes alignment drift caused by padded text under Windows font/DPI scaling.
-- Keeps all existing Base/DLC comparison rows and decoded values.
-- The compact left Research Inspector table from v0.7.8 remains unchanged.
+- Shortens the left-side **Attribute** text without removing underlying research metadata.
+- Applies the same compact naming policy to **Base and all five DLC packs**.
+- Generated weapon-stat series/component noise is collapsed to concise labels.
+- `ACCURACY_02` displays as **Suspected: Weapon Stat - Spread**.
+- Similar families display as Damage, Recoil, Rate of Fire, Ammo Capacity, Reload Speed, Scope, Suppressor, etc.
+- Strong upgrade-cost candidates display as **Strong Suspected: Upgrade Cost - <family>**.
+- Curated Component A/B names are preserved where they identify distinct paired controls.
+- Full original assessment names and evidence remain in the right-side inspector.
 
 Java 21 or newer remains required.

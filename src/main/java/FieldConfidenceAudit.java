@@ -175,6 +175,42 @@ final class FieldConfidenceAudit {
         return unidentified();
     }
 
+    static String compactDisplayName(Assessment a, String generatedLabel) {
+        if (a==null) return "Unidentified";
+        String name=a.name==null?"":a.name.trim();
+        String family=weaponFamily(generatedLabel);
+        String lower=name.toLowerCase(Locale.ROOT);
+        if (family!=null && (lower.contains("weapon stat") || lower.contains("upgrade parts cost"))) {
+            String prefix=switch(a.confidence) {
+                case STRONG_SUSPECTED -> "Strong Suspected: ";
+                case SUSPECTED -> "Suspected: ";
+                case CONFIRMED -> "Confirmed: ";
+                case UNIDENTIFIED -> "Unidentified: ";
+            };
+            String stat=compactFamilyStat(family,generatedLabel);
+            if (lower.contains("upgrade parts cost")) return prefix+"Upgrade Cost - "+stat;
+            return prefix+"Weapon Stat - "+stat;
+        }
+        name=name.replace('—','-');
+        name=name.replace("Weapon Weapon Stat","Weapon Stat");
+        name=name.replace("Inventory Grid Control","Inventory Grid");
+        name=name.replace("Damage-Penalty Control","Damage Penalty");
+        name=name.replace("Suppressor Companion Field","Suppressor Companion");
+        name=name.replace("Augmentation Attribute","Augmentation");
+        name=name.replaceAll("(?i)\\s+component\\s+\\d+\\b","");
+        name=name.replaceAll("(?i)\\s+series\\s+\\d+\\b","");
+        name=name.replaceAll("\\s+-\\s+"," - ");
+        name=name.replaceAll("\\s{2,}"," ").trim();
+        return name;
+    }
+
+    private static String compactFamilyStat(String family, String label) {
+        String u=cleanGeneratedLabel(label).toUpperCase(Locale.ROOT).replace(' ','_');
+        if (family.equals("Accuracy") && u.contains("ACCURACY_02")) return "Spread";
+        if (family.equals("Silencer")) return "Suppressor";
+        return family;
+    }
+
     static String dlcEvidence(String profileName, DLCProfiles.Field f, String context) {
         return assessDlc(profileName,f,context).evidence;
     }

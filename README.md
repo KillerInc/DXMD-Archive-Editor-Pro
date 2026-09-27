@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.7.9  
+> **Current version:** v0.7.10  
 > **Runtime:** Java 21 or newer  
 > **Primary platform:** Windows
 
@@ -48,6 +48,10 @@ The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki 
 ## v0.7.3 tab readability fix
 
 v0.7.3 fixes dark/black text that could remain on top-level tabs under Nimbus. The theme now supplies explicit Nimbus text colors for enabled, selected, focused, hover and pressed tab states, and also forces per-tab foreground/background colors at runtime. Selected tabs use white text; inactive tabs use the light application text color.
+
+## v0.7.10 concise research attributes
+
+The Research Inspector **Attribute** column now uses concise display labels for Base and all five DLC packs. Generated weapon-family noise such as numbered series/components is removed from the list while the full confidence name and evidence remain available in the right-side inspector. For example, `ACCURACY_02` is shown as **Suspected: Weapon Stat - Spread**. Other generated families collapse to compact labels such as Damage, Recoil, Rate of Fire, Reload Speed, Scope, Suppressor, and Upgrade Cost. Curated Component A/B names remain intact where they distinguish real paired controls.
 
 ## v0.7.9 comparison evidence alignment
 
@@ -243,7 +247,7 @@ Linux/macOS:
 The source targets Java 21 with `javac --release 21`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.7.9.jar
+dist/DXMD-Archive-Editor-Pro-v0.7.10.jar
 ```
 
 ## Credits

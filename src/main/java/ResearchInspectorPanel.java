@@ -555,7 +555,9 @@ public class ResearchInspectorPanel extends JPanel {
     }
 
     private String confidence(Row row) { return assessment(row).confidence.toString().replace('_', ' '); }
-    private String displayName(Row row) { return assessment(row).name; }
+    private String displayName(Row row) {
+        return FieldConfidenceAudit.compactDisplayName(assessment(row), row.label);
+    }
 
     private void saveIds() {
         if (activeSource == null) return;
