@@ -12,11 +12,16 @@ public class Launcher {
     private static File loadedBaseArchive;
     private static final LinkedHashMap<String,File> loadedDlcArchives=new LinkedHashMap<>();
 
+    private record PendingLoad(GameLocator.Result located, File manualBase, String manualStatus, boolean bootAutoDetected) {}
+    private record LoadingUi(JDialog dialog, JLabel message, JProgressBar bar) {}
+    @FunctionalInterface private interface ProgressSink { void update(int value,String message); }
+    @FunctionalInterface private interface LoadResolver { PendingLoad resolve(ProgressSink progress) throws Exception; }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
                 UiTheme.install();
-                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.3");
+                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.4");
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setLayout(new BorderLayout(6, 6));
 
@@ -68,17 +73,93 @@ public class Launcher {
     public static void openGameOrArchive(File selected, Component parent) {
         if (selected == null || !selected.isFile()) {JOptionPane.showMessageDialog(parent,"Please select DXMD.exe or a .archive file.","File selection error",JOptionPane.ERROR_MESSAGE);return;}
         String name=selected.getName();
-        if(name.equalsIgnoreCase("DXMD.exe")){try{applyLocatedGame(GameLocator.locate(selected),false);}catch(Exception ex){JOptionPane.showMessageDialog(parent,ex.getMessage(),"Game detection error",JOptionPane.ERROR_MESSAGE);}return;}
-        if(name.toLowerCase(Locale.ROOT).endsWith(".archive")){
-            try{applyLocatedGame(GameLocator.locateFromHint(selected),false);return;}catch(Exception ignored){
-                if(name.equalsIgnoreCase("Game.layer.1.all.archive")){loadBaseArchiveEverywhere(selected);researchInspector.setDetectedArchives(selected,loadedDlcArchives);installStatus.setText("Manual base archive: "+selected.getAbsolutePath());return;}
-            }
-            JOptionPane.showMessageDialog(parent,"That archive is not inside a recognized DXMD installation. Select DXMD.exe, or select the exact Game.layer.1.all.archive for manual testing.","Could not resolve game archive",JOptionPane.ERROR_MESSAGE);return;
+        if(!name.equalsIgnoreCase("DXMD.exe")&&!name.toLowerCase(Locale.ROOT).endsWith(".archive")){
+            JOptionPane.showMessageDialog(parent,"Please select DXMD.exe or a .archive file.\nSelected: "+selected.getAbsolutePath(),"Unsupported file",JOptionPane.ERROR_MESSAGE);return;
         }
-        JOptionPane.showMessageDialog(parent,"Please select DXMD.exe or a .archive file.\nSelected: "+selected.getAbsolutePath(),"Unsupported file",JOptionPane.ERROR_MESSAGE);
+
+        beginLoad(parent, progress -> {
+            progress.update(8,"Resolving game files...");
+            PendingLoad pending;
+            if(name.equalsIgnoreCase("DXMD.exe")){
+                GameLocator.Result result=GameLocator.locate(selected);
+                pending=new PendingLoad(result,null,null,false);
+            }else{
+                try{
+                    GameLocator.Result result=GameLocator.locateFromHint(selected);
+                    pending=new PendingLoad(result,null,null,false);
+                }catch(Exception ignored){
+                    if(name.equalsIgnoreCase("Game.layer.1.all.archive"))
+                        pending=new PendingLoad(null,selected,"Manual base archive: "+selected.getAbsolutePath(),false);
+                    else throw new java.io.IOException("That archive is not inside a recognized DXMD installation. Select DXMD.exe, or select the exact Game.layer.1.all.archive for manual testing.");
+                }
+            }
+            File base=pending.located!=null?pending.located.baseArchive:pending.manualBase;
+            prewarmBaseResearch(base,progress);
+            progress.update(94,"Preparing editor views...");
+            return pending;
+        });
     }
 
-    private static void autoDetectFromApplication(Component parent){GameLocator.Result result=GameLocator.locateFromApplication();if(result!=null)applyLocatedGame(result,true);}
+    private static void autoDetectFromApplication(Component parent){
+        GameLocator.Result result=GameLocator.locateFromApplication();
+        if(result==null)return;
+        beginLoad(parent,progress->{
+            progress.update(12,"Auto-detected DXMD. Preparing archives...");
+            prewarmBaseResearch(result.baseArchive,progress);
+            progress.update(94,"Preparing editor views...");
+            return new PendingLoad(result,null,null,true);
+        });
+    }
+
+    private static void prewarmBaseResearch(File base, ProgressSink progress) throws Exception {
+        if(base==null||!base.isFile())return;
+        progress.update(28,"Reading archive directory...");
+        ArchiveResourceIndex.load(base);
+        progress.update(48,"Indexing internal resources...");
+        progress.update(58,"Scanning readable archive identifiers...");
+        ArchiveContextResolver.resolve(base,BaseResearchProfiles.get().fields);
+        progress.update(88,"Mapping research fields...");
+    }
+
+    private static void beginLoad(Component parent, LoadResolver resolver){
+        LoadingUi ui=createLoadingUi(parent);
+        SwingWorker<PendingLoad,String> worker=new SwingWorker<>(){
+            @Override protected PendingLoad doInBackground() throws Exception {
+                return resolver.resolve((value,message)->{setProgress(Math.max(0,Math.min(100,value)));publish(message);});
+            }
+            @Override protected void process(java.util.List<String> chunks){if(!chunks.isEmpty())ui.message.setText(chunks.get(chunks.size()-1));}
+            @Override protected void done(){
+                try{
+                    PendingLoad pending=get();
+                    ui.bar.setValue(97);ui.message.setText("Populating editor...");
+                    if(pending.located!=null)applyLocatedGame(pending.located,pending.bootAutoDetected);
+                    else if(pending.manualBase!=null){loadBaseArchiveEverywhere(pending.manualBase);researchInspector.setDetectedArchives(pending.manualBase,loadedDlcArchives);installStatus.setText(pending.manualStatus);}
+                    ui.bar.setValue(100);ui.message.setText("Ready");
+                }catch(Exception ex){
+                    Throwable cause=ex.getCause()==null?ex:ex.getCause();
+                    JOptionPane.showMessageDialog(parent,cause.getMessage()==null?cause.toString():cause.getMessage(),"Archive load error",JOptionPane.ERROR_MESSAGE);
+                }finally{ui.dialog.dispose();}
+            }
+        };
+        worker.addPropertyChangeListener(e->{if("progress".equals(e.getPropertyName()))ui.bar.setValue((Integer)e.getNewValue());});
+        worker.execute();
+        ui.dialog.setVisible(true);
+    }
+
+    private static LoadingUi createLoadingUi(Component parent){
+        Window owner=parent instanceof Window?(Window)parent:SwingUtilities.getWindowAncestor(parent);
+        JDialog dialog=new JDialog(owner,"Loading Archive",Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        JPanel panel=new JPanel(new BorderLayout(10,10));panel.setBorder(BorderFactory.createEmptyBorder(16,18,16,18));
+        JLabel title=new JLabel("Loading Archive");title.setFont(new Font("Segoe UI",Font.BOLD,16));title.setForeground(UiTheme.TEXT);
+        JLabel message=new JLabel("Preparing...");message.setForeground(UiTheme.MUTED);
+        JProgressBar bar=new JProgressBar(0,100);bar.setValue(0);bar.setStringPainted(true);bar.setForeground(UiTheme.ACCENT);bar.setBackground(UiTheme.FIELD);bar.setPreferredSize(new Dimension(390,22));
+        JPanel labels=new JPanel(new BorderLayout(4,4));labels.add(title,BorderLayout.NORTH);labels.add(message,BorderLayout.SOUTH);
+        panel.add(labels,BorderLayout.NORTH);panel.add(bar,BorderLayout.CENTER);
+        dialog.setContentPane(panel);dialog.pack();dialog.setResizable(false);dialog.setLocationRelativeTo(parent);UiTheme.apply(dialog);bar.setForeground(UiTheme.ACCENT);bar.setBackground(UiTheme.FIELD);
+        return new LoadingUi(dialog,message,bar);
+    }
+
     private static void applyLocatedGame(GameLocator.Result result, boolean bootAutoDetected){
         int installed=0;loadedDlcArchives.clear();loadedDlcArchives.putAll(result.dlcArchives);for(File f:result.dlcArchives.values())if(f!=null)installed++;
         installStatus.setText((bootAutoDetected?"Auto-detected game: ":"Game: ")+result.gameRoot.getAbsolutePath()+"   |   DLC packs found: "+installed+"/"+result.dlcArchives.size());
