@@ -1,0 +1,346 @@
+name: Release v0.7.11 Full Audit Cleanup
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.11.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Apply audited cleanup and fixes
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          def read(path): return Path(path).read_text()
+          def write(path, text): Path(path).write_text(text)
+          def must_replace(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'missing replacement target: {label}')
+              return text.replace(old, new)
+
+          # Stream readable ASCII runs instead of reading complete archives into heap.
+          for path, cls in [
+              ('src/main/java/ArchiveContextResolver.java', 'ArchiveContextResolver'),
+              ('src/main/java/DLCArchiveContextResolver.java', 'DLCArchiveContextResolver')]:
+              s=read(path)
+              s=s.replace('import java.nio.charset.StandardCharsets;\n','').replace('import java.nio.file.Files;\n','')
+              old=f'''    private {cls}(byte[] bytes) {{\n        scan(bytes);\n        buildBlocks();\n    }}'''
+              new=f'''    private {cls}(File archive) throws IOException {{\n        scan(archive);\n        buildBlocks();\n    }}'''
+              s=must_replace(s,old,new,path+' constructor')
+              s=must_replace(s,f'new {cls}(Files.readAllBytes(archive.toPath()))',f'new {cls}(archive)',path+' cache')
+              pattern=r'    private void scan\(byte\[\] bytes\) \{.*?\n    \}\n\n    private void buildBlocks\(\) \{'
+              replacement='''    private void scan(File archive) throws IOException {\n        for (ArchiveTextScanner.Token raw : ArchiveTextScanner.scan(archive)) {\n            String text = raw.text();\n            if (isReadable(text)) readable.add(new Token(raw.start(), raw.end(), text));\n        }\n    }\n\n    private void buildBlocks() {'''
+              s,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+              if n!=1: raise SystemExit('scan replacement failed: '+path)
+              s=s.replace('Base Fields rows','Base research rows').replace('DLC Fields rows','DLC research rows')
+              write(path,s)
+
+          # Preserve explicitly monospaced/Courier byte views instead of forcing Segoe UI everywhere.
+          p='src/main/java/UiTheme.java'; s=read(p)
+          old='''        c.setFont(new Font("Segoe UI", c.getFont() == null ? Font.PLAIN : c.getFont().getStyle(),\n                Math.max(12, c.getFont() == null ? 13 : c.getFont().getSize())));'''
+          new='''        Font oldFont = c.getFont();\n        String oldName = oldFont == null ? "" : oldFont.getName().toLowerCase(java.util.Locale.ROOT);\n        boolean keepMono = oldName.contains("mono") || oldName.contains("courier");\n        c.setFont(new Font(keepMono ? Font.MONOSPACED : "Segoe UI",\n                oldFont == null ? Font.PLAIN : oldFont.getStyle(),\n                Math.max(12, oldFont == null ? 13 : oldFont.getSize())));'''
+          s=must_replace(s,old,new,'UiTheme font policy')
+          write(p,s)
+
+          # Base editor: remove repeated archive name, surface grouped-value disagreements, and shorten status copy.
+          p='src/main/java/BaseEditPanel.java'; s=read(p)
+          s=s.replace('sectionName + " — Game.layer.1.all.archive"','sectionName')
+          old='''            invalidValues.clear();\n            dirtyOptions.clear();\n            for (JComponent c : entryValues) c.setEnabled(true);\n            for (JLabel label : entryLabels) label.setForeground(UiTheme.TEXT);\n            defaults.setEnabled(true);\n            current.setEnabled(true);\n            showPreset(0, false);\n            description.setText(sectionDescription + "\\nLoaded base archive."\n                    + (BackupManager.hasBackup(file) ? " | .bak available" : ""));'''
+          new='''            invalidValues.clear();\n            dirtyOptions.clear();\n            ArrayList<String> mixed = new ArrayList<>();\n            for (int i = 0; i < entryValues.size(); i++) {\n                entryValues.get(i).setEnabled(true);\n                Option option = options.get(i);\n                boolean isMixed = option.hasMixedCurrentValues();\n                entryLabels.get(i).setText(option.getOptionName() + (isMixed ? " [mixed]" : ""));\n                entryLabels.get(i).setForeground(isMixed ? UiTheme.WARNING : UiTheme.TEXT);\n                if (isMixed) mixed.add(option.getOptionName());\n            }\n            defaults.setEnabled(true);\n            current.setEnabled(true);\n            showPreset(0, false);\n            String mixedText = mixed.isEmpty() ? "" : "\\nMixed mapped values: " + String.join(", ", mixed)\n                    + ". Editing one will synchronize all mapped addresses.";\n            description.setText(sectionDescription + mixedText\n                    + (BackupManager.hasBackup(file) ? "\\nBackup available." : ""));'''
+          s=must_replace(s,old,new,'BaseEditPanel loaded state')
+          old='''        for (JComponent c : entryValues) c.setEnabled(false);\n        for (JLabel label : entryLabels) label.setForeground(UiTheme.MUTED);'''
+          new='''        for (JComponent c : entryValues) c.setEnabled(false);\n        for (int i = 0; i < entryLabels.size(); i++) {\n            entryLabels.get(i).setText(options.get(i).getOptionName());\n            entryLabels.get(i).setForeground(UiTheme.MUTED);\n        }'''
+          s=must_replace(s,old,new,'BaseEditPanel clear state')
+          s=s.replace('"No " + sectionName + " changes to apply."','"No changes to apply."')
+          write(p,s)
+
+          # Research Inspector: shorter UI copy, asynchronous first-time DLC/source preparation, real U64 edits,
+          # and no fake zero-filled candidate bytes when the archive is not available.
+          p='src/main/java/ResearchInspectorPanel.java'; s=read(p)
+          if 'import java.math.BigInteger;' not in s:
+              s=s.replace('import java.io.*;\n','import java.io.*;\nimport java.math.BigInteger;\n')
+          s=s.replace('    private String[] contexts = new String[0];','    private String[] contexts = new String[0];\n    private boolean rebuildingSources;')
+          replacements={
+              'Research view: changed-byte runs are evidence, not assumed field boundaries.':'Changed-byte runs are evidence, not field boundaries.',
+              'Logical Resource / HeaderLib Structure':'Resource Structure',
+              'Candidate Boundary / Interpretation':'Candidate',
+              'Multiple Interpretations':'Interpretations',
+              'Comparison Evidence':'Comparisons',
+              'Start delta:':'Delta:',
+              'Interpret as:':'Type:',
+              'Save IDs...':'Save IDs...',
+              'Load IDs...':'Load IDs...'
+          }
+          for a,b in replacements.items(): s=s.replace(a,b)
+          s=s.replace('"Tactical — DLCPackTactical.layer.0.all.archive", "", null, false','"Tactical", "", null, false')
+          old='''        sourceBox.addActionListener(e -> {\n            if (sourceBox.getSelectedItem() != null) loadSource((Source) sourceBox.getSelectedItem());\n        });\n        reload.addActionListener(e -> { if (activeSource != null) loadSource(activeSource); });'''
+          new='''        sourceBox.addActionListener(e -> {\n            if (!rebuildingSources && sourceBox.getSelectedItem() != null)\n                loadSourceAsync((Source) sourceBox.getSelectedItem());\n        });\n        reload.addActionListener(e -> { if (activeSource != null) loadSourceAsync(activeSource); });'''
+          s=must_replace(s,old,new,'Research source handlers')
+          pattern=r'    private void rebuildSources\(\) \{.*?\n    \}\n\n    private void loadSource\(Source s\) \{'
+          replacement='''    private void rebuildSources() {\n        Source old = (Source) sourceBox.getSelectedItem();\n        String oldProfile = old == null ? null : old.profileName;\n        rebuildingSources = true;\n        try {\n            DefaultComboBoxModel<Source> m = new DefaultComboBoxModel<>();\n            m.addElement(new Source("Base", "Game.layer.1.all.archive", baseArchive, true));\n            for (String n : DLCProfiles.names()) m.addElement(new Source(shortDlc(n), n, dlcArchives.get(n), false));\n            sourceBox.setModel(m);\n            int selected = 0;\n            if (oldProfile != null) {\n                for (int i = 0; i < m.getSize(); i++) {\n                    if (m.getElementAt(i).profileName.equals(oldProfile)) { selected = i; break; }\n                }\n            }\n            sourceBox.setSelectedIndex(selected);\n        } finally {\n            rebuildingSources = false;\n        }\n        Source selected = (Source) sourceBox.getSelectedItem();\n        if (selected != null) loadSource(selected);\n    }\n\n    private void loadSourceAsync(Source s) {\n        if (s == null) return;\n        if (s.file == null || !s.file.isFile()) { loadSource(s); return; }\n\n        Window owner = SwingUtilities.getWindowAncestor(this);\n        JDialog dialog = new JDialog(owner, "Loading " + s.title, Dialog.ModalityType.APPLICATION_MODAL);\n        dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);\n        JPanel panel = new JPanel(new BorderLayout(8, 8));\n        panel.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));\n        JLabel message = new JLabel("Preparing archive...");\n        JProgressBar bar = new JProgressBar();\n        bar.setIndeterminate(true);\n        bar.setStringPainted(true);\n        bar.setString("Working");\n        bar.setPreferredSize(new Dimension(360, 22));\n        final int[] dots = {0};\n        javax.swing.Timer animation = new javax.swing.Timer(260, e -> {\n            dots[0] = (dots[0] + 1) % 4;\n            bar.setString("Working" + ".".repeat(dots[0]));\n        });\n        animation.start();\n        panel.add(message, BorderLayout.NORTH);\n        panel.add(bar, BorderLayout.CENTER);\n        dialog.setContentPane(panel);\n        dialog.pack();\n        dialog.setResizable(false);\n        dialog.setLocationRelativeTo(this);\n        UiTheme.apply(dialog);\n\n        SwingWorker<Void, String> worker = new SwingWorker<>() {\n            @Override protected Void doInBackground() throws Exception {\n                publish("Indexing archive resources...");\n                ArchiveResourceIndex.load(s.file);\n                publish("Scanning readable identifiers...");\n                if (s.base) ArchiveContextResolver.resolve(s.file, BaseResearchProfiles.get().fields);\n                else DLCArchiveContextResolver.resolve(s.file, DLCProfiles.get(s.profileName).fields);\n                publish("Mapping resource structure...");\n                LogicalResourceCatalog.prewarm();\n                return null;\n            }\n            @Override protected void process(java.util.List<String> messages) {\n                if (!messages.isEmpty()) message.setText(messages.get(messages.size() - 1));\n            }\n            @Override protected void done() {\n                animation.stop();\n                try {\n                    get();\n                    bar.setIndeterminate(false);\n                    bar.setValue(100);\n                    bar.setString("Ready");\n                    loadSource(s);\n                } catch (Exception ex) {\n                    Throwable cause = ex.getCause() == null ? ex : ex.getCause();\n                    JOptionPane.showMessageDialog(ResearchInspectorPanel.this,\n                            cause.getMessage() == null ? cause.toString() : cause.getMessage(),\n                            "Archive load error", JOptionPane.ERROR_MESSAGE);\n                } finally {\n                    dialog.dispose();\n                }\n            }\n        };\n        worker.execute();\n        dialog.setVisible(true);\n    }\n\n    private void loadSource(Source s) {'''
+          s,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if n!=1: raise SystemExit('Research rebuild/load insertion failed')
+          s=s.replace('m.addElement(new Source("Base — Game.layer.1.all.archive", "Game.layer.1.all.archive", baseArchive, true));','m.addElement(new Source("Base", "Game.layer.1.all.archive", baseArchive, true));')
+          # Concise status/evidence copy.
+          s=s.replace('confidenceLabel.setText(a.confidence + " — " + a.name);','confidenceLabel.setText(a.confidence.toString().replace(\'_\', \' \') + " — " + FieldConfidenceAudit.compactDisplayName(a, row.label));')
+          s=s.replace('''evidence += "\\n\\nSTRUCTURE: This byte range is inside " + lr.logicalPath()\n                    + " at payload +0x" + Long.toHexString(po).toUpperCase(Locale.ROOT)\n                    + ". This is structural HeaderLib evidence only; it does not by itself prove the field's gameplay meaning.";''',
+                      '''evidence += "\\n\\nStructure: " + lr.logicalPath()\n                    + " @ payload +0x" + Long.toHexString(po).toUpperCase(Locale.ROOT)\n                    + ". Location alone does not prove gameplay meaning.";''')
+          s=s.replace('''            s.append("\\nBOUNDARY NOTE: this interpretation extends beyond the original changed-byte run (row width ")\n                    .append(row.length).append(").");''',
+                      '''            s.append("\\nBoundary differs from diff run (row width ").append(row.length).append(").");''')
+          # No invented zero bytes when no archive exists outside the raw diff fragment.
+          s=s.replace('''    private byte[] sliceOriginal(Row r, int delta, int width) {\n        if (delta < 0 || delta + width > r.original.length) return new byte[width];\n        return Arrays.copyOfRange(r.original, delta, delta + width);\n    }''',
+                      '''    private byte[] sliceOriginal(Row r, int delta, int width) {\n        if (delta < 0 || delta + width > r.original.length)\n            throw new IllegalArgumentException("Load the archive to inspect bytes outside the diff fragment.");\n        return Arrays.copyOfRange(r.original, delta, delta + width);\n    }''')
+          # Full signed/unsigned 1/2/4/8-byte integer input including U64 max.
+          old='''        long v = Long.parseLong(text);\n        long min = type.startsWith("Signed") && width < 8 ? -(1L << (width * 8 - 1)) : 0;\n        long max = type.startsWith("Signed") && width < 8 ? (1L << (width * 8 - 1)) - 1\n                : (width == 8 ? Long.MAX_VALUE : (1L << (width * 8)) - 1);\n        if (v < min || v > max) throw new IllegalArgumentException("Value does not fit selected width.");\n        byte[] b = new byte[width];\n        for (int i = 0; i < width; i++) b[i] = (byte) (v >>> (8 * i));\n        return b;'''
+          new='''        boolean signed = type.startsWith("Signed");\n        int bits = width * 8;\n        BigInteger value = new BigInteger(text);\n        BigInteger modulus = BigInteger.ONE.shiftLeft(bits);\n        BigInteger min = signed ? BigInteger.ONE.shiftLeft(bits - 1).negate() : BigInteger.ZERO;\n        BigInteger max = signed ? BigInteger.ONE.shiftLeft(bits - 1).subtract(BigInteger.ONE)\n                : modulus.subtract(BigInteger.ONE);\n        if (value.compareTo(min) < 0 || value.compareTo(max) > 0)\n            throw new IllegalArgumentException("Value does not fit selected width.");\n        if (value.signum() < 0) value = value.add(modulus);\n        byte[] b = new byte[width];\n        for (int i = 0; i < width; i++) b[i] = value.shiftRight(8 * i).byteValue();\n        return b;'''
+          s=must_replace(s,old,new,'U64 parser')
+          # Use shared byte formatter.
+          s=re.sub(r'    private static String hexSpaced\(byte\[\] b\) \{.*?\n    \}',
+                   '    private static String hexSpaced(byte[] b) { return HexUtil.spaced(b); }',s,count=1,flags=re.S)
+          write(p,s)
+
+          # The left table already has Status; remove duplicated confidence prefixes from Attribute.
+          p='src/main/java/FieldConfidenceAudit.java'; s=read(p)
+          pattern=r'    static String compactDisplayName\(Assessment a, String generatedLabel\) \{.*?\n    private static String compactFamilyStat\(String family, String label\) \{.*?\n    \}\n\n'
+          replacement='''    static String compactDisplayName(Assessment a, String generatedLabel) {\n        if (a == null) return "Unidentified";\n        String name = a.name == null ? "" : a.name.trim();\n        String family = weaponFamily(generatedLabel);\n        String lower = name.toLowerCase(Locale.ROOT);\n        if (family != null && (lower.contains("weapon stat") || lower.contains("upgrade parts cost"))) {\n            String stat = compactFamilyStat(family, generatedLabel);\n            return (lower.contains("upgrade parts cost") ? "Upgrade Cost - " : "Weapon Stat - ") + stat;\n        }\n\n        name = name.replace('—', '-');\n        name = name.replaceFirst("(?i)^(strong\\s+suspected|suspected|confirmed):\\s*", "");\n        name = name.replace("Weapon Weapon Stat", "Weapon Stat");\n        name = name.replace("Energy Auto-Regeneration", "Energy Auto-Regen");\n        name = name.replace("Inventory Grid Width", "Inventory Width");\n        name = name.replace("Inventory Grid Control", "Inventory Grid");\n        name = name.replace("Magazine Capacity", "Magazine");\n        name = name.replace("Takedown Power Consumption Control", "Takedown Power Consumption");\n        name = name.replace("Standard-Reticle Function Slot / Silencer Override", "Reticle / Silencer Function");\n        name = name.replace("Built-in Silencer Enable Toggle", "Silencer Toggle");\n        name = name.replace("Bolt-Action Override Toggle", "Bolt-Action Toggle");\n        name = name.replace("Experimental Augmentation Gate", "Experimental Aug Gate");\n        name = name.replace("Health Regeneration Disable Component", "Health Regen - Disable");\n        name = name.replace("Damage Reduction L1 Default-Enable Component", "Damage Reduction L1 - Default");\n        name = name.replace("Suppressor Damage-Debuff Component", "Suppressor Debuff");\n        name = name.replace("Suppressor Companion Field", "Suppressor Companion");\n        name = name.replace("Damage-Penalty Control", "Damage Penalty");\n        name = name.replace("Micro-Assembler Experimental/Overclock Gate", "Micro-Assembler Exp/Overclock");\n        name = name.replace("Unresolved Tactical Field (contaminated Micro-Assembler archive)", "Unresolved Tactical Field");\n        name = name.replace("Augmentation Attribute", "Augmentation");\n        name = name.replace("Augmentation Control", "Aug Control");\n        name = name.replaceAll("(?i)\\s+component\\s+\\d+\\b", "");\n        name = name.replaceAll("(?i)\\s+series\\s+\\d+\\b", "");\n        name = name.replaceAll("\\s+-\\s+", " - ");\n        return name.replaceAll("\\s{2,}", " ").trim();\n    }\n\n    private static String compactFamilyStat(String family, String label) {\n        String u = cleanGeneratedLabel(label).toUpperCase(Locale.ROOT).replace(' ', '_');\n        if (family.equals("Accuracy") && u.contains("ACCURACY_02")) return "Spread";\n        if (family.equals("Silencer")) return "Suppressor";\n        return family;\n    }\n\n'''
+          s,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if n!=1: raise SystemExit('compactDisplayName replacement failed')
+          write(p,s)
+
+          # Launcher wording and one redundant Research Inspector rebuild on initial load.
+          p='src/main/java/Launcher.java'; s=read(p)
+          s=s.replace('DXMD Archive Editor Pro v0.7.10','DXMD Archive Editor Pro v0.7.11')
+          s=s.replace('Restore Confirmed Fields to Original','Restore Confirmed Fields')
+          s=s.replace('Select DXMD.exe to auto-detect the base game and installed DLC archives.','Select DXMD.exe to detect Base + DLC archives.')
+          s=s.replace('"Confirmed base-game weapon and ammunition controls."','"Weapon and ammunition controls."')
+          s=s.replace('"Confirmed player-energy and augmentation controls."','"Energy and augmentation controls."')
+          s=s.replace('"Confirmed inventory dimensions and non-ammunition stack controls. Dimension edits can be unsafe when affected items already exist in a save."','"Inventory dimensions and stack sizes. Dimension edits can affect existing saves."')
+          s=s.replace('"Confirmed store-price and crafting-cost controls."','"Shop prices and crafting costs."')
+          s=s.replace('''private static void loadBaseArchiveEverywhere(File archive){loadedBaseArchive=archive;for(BaseEditPanel p:baseEditPanels)p.loadArchive(archive);if(researchInspector!=null)researchInspector.setBaseArchive(archive);}''',
+                      '''private static void loadBaseArchiveEverywhere(File archive){loadedBaseArchive=archive;for(BaseEditPanel p:baseEditPanels)p.loadArchive(archive);}''')
+          s=s.replace('''private static void clearBaseArchiveEverywhere(String message){loadedBaseArchive=null;for(BaseEditPanel p:baseEditPanels)p.clearArchive(message);if(researchInspector!=null)researchInspector.setBaseArchive(null);}''',
+                      '''private static void clearBaseArchiveEverywhere(String message){loadedBaseArchive=null;for(BaseEditPanel p:baseEditPanels)p.clearArchive(message);}''')
+          write(p,s)
+
+          # Remove stale terminology and repetitive warnings from current source comments/descriptions.
+          p='src/main/java/BaseOptionCatalog.java'; s=read(p)
+          s=s.replace('Research-only and suspected values stay in Base Fields.','Research-only and suspected values stay in Research Inspector.')
+          s=s.replace('return "Sets the " + what + " in inventory tiles. Clean game value is " + defaultValue + ". Range:0-16 " + dimensionWarning();',
+                      'return what + " in inventory tiles. Default: " + defaultValue + ". Range: 0–16. " + dimensionWarning();')
+          s=s.replace('return "WARNING: changing an item dimension while that item exists in a save can make the save unusable or crash the inventory. Drop affected items and save before changing dimensions.";',
+                      'return "Save-risk; a full warning is shown before apply.";')
+          write(p,s)
+
+          p='src/main/java/GameLocator.java'; s=read(p).replace('import java.net.URISyntaxException;\n',''); write(p,s)
+
+          # Consistent profile parser validation for bundled data.
+          p='src/main/java/DLCProfiles.java'; s=read(p)
+          s=s.replace('''    static void load() throws Exception {\n        try(BufferedReader br=CompressedResource.open''','''    static void load() throws Exception {\n        profiles.clear();\n        try(BufferedReader br=CompressedResource.open''')
+          s=s.replace('''                else if(x[0].equals("FIELD")){p.fields.add(new Field(Long.parseLong(x[1]),x[4],fromHex(x[2]),fromHex(x[3])));}''',
+                      '''                else if(x[0].equals("FIELD")){if(p==null||x.length<5)throw new IOException("FIELD before PROFILE or malformed DLC profile row");p.fields.add(new Field(Long.parseLong(x[1]),x[4],fromHex(x[2]),fromHex(x[3])));}''')
+          s=s.replace('''    static byte[] fromHex(String s){byte[] b=new byte[s.length()/2];for(int i=0;i<b.length;i++)b[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);return b;}''',
+                      '''    static byte[] fromHex(String s){if(s==null||(s.length()&1)!=0)throw new IllegalArgumentException("Hex length must be even");byte[] b=new byte[s.length()/2];for(int i=0;i<b.length;i++)b[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);return b;}''')
+          write(p,s)
+
+          p='src/main/java/DLCReferenceProfiles.java'; s=read(p)
+          s=s.replace('''    private static byte[] fromHex(String s){byte[] b=new byte[s.length()/2];for(int i=0;i<b.length;i++)b[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);return b;}''',
+                      '''    private static byte[] fromHex(String s){if(s==null||(s.length()&1)!=0)throw new IllegalArgumentException("Hex length must be even");byte[] b=new byte[s.length()/2];for(int i=0;i<b.length;i++)b[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);return b;}''')
+          write(p,s)
+
+          # Versioned build output.
+          for name in ('build.sh','build.bat'):
+              p=Path(name); s=p.read_text().replace('DXMD-Archive-Editor-Pro-v0.7.10.jar','DXMD-Archive-Editor-Pro-v0.7.11.jar'); p.write_text(s)
+
+          # README current view; legacy sections are explicitly marked historical instead of pretending old tabs still exist.
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.10','> **Current version:** v0.7.11')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.10.jar','dist/DXMD-Archive-Editor-Pro-v0.7.11.jar')
+          s=s.replace('## Base Fields\n','## Legacy Base Fields notes (pre-v0.7.1)\n')
+          s=s.replace('## DLC Fields\n','## Legacy DLC Fields notes (pre-v0.7.1)\n')
+          s=s.replace('Known mappings remain visible in Base Fields for verification, but normal editing of those values is organized in the categorized tabs above.',
+                      'These notes describe the pre-v0.7.1 research table. Current research is shown in Research Inspector.')
+          anchor='## v0.7.10 concise research attributes\n'
+          section='''## v0.7.11 full audit / cleanup\n\nv0.7.11 audits every Java source file and all current Base/DLC research labels. It removes the unused legacy Base/DLC research panels, streams archive text scanning instead of loading whole archives into heap, adds animated background loading when switching research archives, supports the full unsigned 64-bit edit range, detects mixed values in grouped known-stat mappings, hardens ARCH/backup parsing, and removes redundant UI wording. See **CODE_AUDIT_v0.7.11.md** for findings and remaining design debt.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.11\n\n## Full code + UI text audit\n\n- Audited every Java source file and all 2,896 current Base/DLC research rows.\n- Removed obsolete `BaseFieldsPanel` / `DLCEditorPanel` code; Research Inspector is now the only research UI.\n- Replaced full-file archive text reads with a shared streaming scanner, avoiding ~169 MB Classic-DLC heap reads.\n- First-time Research Inspector archive switches now use an animated loading popup instead of blocking the Swing UI.\n- Added full U64 editing through `18446744073709551615`.\n- Candidate bytes outside a raw diff fragment are no longer displayed as fake zeroes when an archive is not loaded.\n- Grouped known-stat controls now detect and mark mixed underlying archive values instead of silently showing only the first address.\n- Hardened ARCH string/range/count validation and backup-path verification.\n- Removed redundant confidence prefixes from Attribute because Status already carries confidence.\n- Shortened curated Base/DLC labels and several Research Inspector headings while preserving detailed evidence on the right.\n- Preserved monospaced fonts in byte/interpretation views.\n- Hardened bundled DLC profile parsing and compressed-resource reads.\n- Java 21 `-Xlint:all -Werror` is part of the release audit.\n\nSee `CODE_AUDIT_v0.7.11.md` for the complete audit summary and remaining low-priority design debt.\n''')
+
+          # Remove historical one-shot release workflow clutter; Git history retains every old workflow.
+          for old in Path('.github/workflows').glob('release-v*.yml'):
+              if old.name != 'release-v0.7.11.yml': old.unlink()
+
+      - name: Generate code audit report
+        shell: python
+        run: |
+          from pathlib import Path
+          java=list(Path('src/main/java').rglob('*.java'))
+          text=f'''# DXMD Archive Editor Pro v0.7.11 Code Audit\n\n## Scope\n\nAudited **{len(java)} Java source files** under `src/main/java`, the complete active Swing UI path, archive read/write paths, backup/restore behavior, embedded profile loaders, and the generated display names for all **2,546 Base + 350 DLC = 2,896** current research rows.\n\n## Fixed in v0.7.11\n\n- **Dead UI code:** removed the obsolete Base Fields and DLC Fields Swing panels. Their only remaining dependency was hex formatting used by ID export; that is now provided by `HexUtil`.\n- **Large-archive heap use:** Base/DLC context resolution no longer uses `Files.readAllBytes`; `ArchiveTextScanner` streams printable runs. This is most significant for the ~169 MB Classic DLC.\n- **EDT stalls:** user-initiated Research Inspector source/reload preparation runs in a `SwingWorker` behind an animated modal load bar.\n- **Grouped-value blindness:** normal editor options now detect when mapped addresses disagree and label the control `[mixed]`. Editing it intentionally synchronizes the group.\n- **U64 range bug:** the research editor now accepts the full unsigned 64-bit range, not only `Long.MAX_VALUE`.\n- **False candidate data:** without a loaded archive, candidate selections outside the stored diff fragment now report that the archive is required instead of fabricating zero bytes.\n- **ARCH hardening:** validates NUL terminators, range overflow, truncation, and unreasonable directory/chunk counts.\n- **Backup hardening:** refuses a non-file `.bak` path and verifies a newly created backup has the expected size before editing proceeds.\n- **Import/export coupling:** ID export no longer depends on deleted UI classes; failed ID loads no longer show a misleading success dialog.\n- **Theme correctness:** explicit monospaced/Courier views survive global theming.\n- **Profile loader robustness:** malformed/even-length DLC profile hex and FIELD ordering are validated.\n- **Compressed resource loop:** avoids the legal zero-byte `InputStream.read` spin case.\n- **Redundant UI text:** Status now owns confidence, Attribute owns the concise field name; repeated prefixes and long control wording were removed. Legacy Base/DLC Fields documentation is marked historical.\n\n## Remaining design debt\n\n- Base and DLC context resolvers now share the streaming byte scanner, but their higher-level scoring/block logic is still duplicated. Unifying that logic is low-risk future cleanup, not required for correctness.\n- The legacy option classes still store current/default/new values in small indexed `ArrayList`s. They are correct but could be replaced by named fields/records for maintainability.\n- Multi-field archive writes are backup-protected but not transactional. An OS/I/O failure can leave a partial write; the tool deliberately does not auto-restore because an older `.bak` may predate other user mod changes.\n- `LogicalResourceCatalog` is a verified static mapping catalog. Runtime HeaderLib discovery would be more general, but the static catalog is faster and currently covers 2,896/2,896 research rows.\n\n## Release gates\n\n- Java 21 compilation.\n- `javac -Xlint:all -Werror`.\n- Base/DLC profile counts and 10 logical-resource mappings.\n- Full Base/DLC compact-name scan.\n- Research table and comparison-table column regressions.\n- Float16 codec regression.\n- Full U64 edit regression.\n- Mixed grouped-value detection regression.\n- Streaming scanner cross-buffer regression.\n- Backup-path safety regression.\n- JAR check confirms deleted legacy panel classes are absent.\n'''
+          Path('CODE_AUDIT_v0.7.11.md').write_text(text)
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Java 21 full lint
+        shell: bash
+        run: |
+          rm -rf build/lint && mkdir -p build/lint
+          find src/main/java -name '*.java' -print0 | xargs -0 javac --release 21 -encoding UTF-8 -Xlint:all -Werror -d build/lint
+
+      - name: Run full audit regressions
+        shell: bash
+        run: |
+          cat > build/V0711Audit.java <<'JAVA'
+          import javax.swing.*;
+          import java.io.*;
+          import java.lang.reflect.*;
+          import java.nio.file.*;
+          import java.util.*;
+          import options.*;
+
+          public class V0711Audit {
+            private static void check(boolean ok,String msg){if(!ok)throw new RuntimeException(msg);}
+            public static void main(String[] args) throws Exception {
+              System.setProperty("java.awt.headless","true");
+              check(BaseResearchProfiles.get().fields.size()==2546,"Base count");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              check(dlc==350,"DLC count");
+              check(LogicalResourceCatalog.mappingCount()==10,"logical mapping count");
+
+              // Compact labels: Status is a separate table column, so Attribute must not repeat confidence.
+              int scanned=0;
+              for(BaseResearchProfiles.Field f:BaseResearchProfiles.get().fields){
+                var a=FieldConfidenceAudit.assessBase(f,null,"");
+                String n=FieldConfidenceAudit.compactDisplayName(a,f.label);
+                String l=n.toLowerCase(Locale.ROOT);
+                check(!l.startsWith("suspected:")&&!l.startsWith("strong suspected:")&&!l.startsWith("confirmed:"),"redundant Base confidence: "+n);
+                check(!n.contains("Weapon Weapon"),"duplicate Base wording: "+n); scanned++;
+              }
+              for(String profile:DLCProfiles.names()) for(DLCProfiles.Field f:DLCProfiles.get(profile).fields){
+                var a=FieldConfidenceAudit.assessDlc(profile,f,"");
+                String n=FieldConfidenceAudit.compactDisplayName(a,f.label);
+                String l=n.toLowerCase(Locale.ROOT);
+                check(!l.startsWith("suspected:")&&!l.startsWith("strong suspected:")&&!l.startsWith("confirmed:"),"redundant DLC confidence: "+n);
+                check(!n.contains("Weapon Weapon"),"duplicate DLC wording: "+n); scanned++;
+              }
+              check(scanned==2896,"label scan count");
+              var fake=new FieldConfidenceAudit.Assessment(FieldConfidenceAudit.Confidence.SUSPECTED,"Suspected: Weapon Weapon Stat — Accuracy 02 component 3","",false);
+              check(FieldConfidenceAudit.compactDisplayName(fake,"ACCURACY_02 component 3").equals("Weapon Stat - Spread"),"Spread label");
+
+              ResearchInspectorPanel panel=new ResearchInspectorPanel();
+              Field lf=ResearchInspectorPanel.class.getDeclaredField("table");lf.setAccessible(true);
+              JTable left=(JTable)lf.get(panel); check(left.getColumnCount()==3,"left research columns");
+              Field rf=ResearchInspectorPanel.class.getDeclaredField("comparisonsTable");rf.setAccessible(true);
+              JTable right=(JTable)rf.get(panel); check(right.getColumnCount()==3,"comparison columns");
+
+              Method parse=ResearchInspectorPanel.class.getDeclaredMethod("parseEdit",String.class,String.class,int.class);parse.setAccessible(true);
+              byte[] u64=(byte[])parse.invoke(panel,"Unsigned integer (LE)","18446744073709551615",8);
+              check(u64.length==8,"U64 width"); for(byte b:u64)check((b&255)==255,"U64 max encoding");
+              byte[] s64=(byte[])parse.invoke(panel,"Signed integer (LE)","-9223372036854775808",8);
+              check((s64[7]&255)==128,"I64 min encoding");
+
+              check(HalfFloat.formatLE(HalfFloat.parseLE("2.25")).startsWith("2.25"),"Float16 roundtrip");
+
+              Path mixed=Files.createTempFile("dxmd-mixed-",".bin");
+              Files.write(mixed,new byte[]{5,6,0,0});
+              ArrayList<Long> addrs=new ArrayList<>();addrs.add(0L);addrs.add(1L);
+              ByteOption option=new ByteOption(addrs,"Mixed test","",5);
+              ArrayList<Option> opts=new ArrayList<>();opts.add(option);
+              FileAnalyzer.analyze(mixed.toFile(),opts);
+              check(option.hasMixedCurrentValues(),"mixed grouped values not detected");
+              Files.deleteIfExists(mixed);
+
+              // Streaming scanner must preserve a token crossing its 1 MiB input buffer boundary.
+              Path scan=Files.createTempFile("dxmd-scan-",".bin");
+              try(OutputStream out=Files.newOutputStream(scan)){
+                out.write(new byte[1024*1024-5]);
+                out.write("CROSS_BOUNDARY_TOKEN".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+                out.write(0);
+              }
+              boolean found=false; for(ArchiveTextScanner.Token t:ArchiveTextScanner.scan(scan.toFile())) if(t.text().equals("CROSS_BOUNDARY_TOKEN"))found=true;
+              check(found,"streaming scanner boundary token"); Files.deleteIfExists(scan);
+
+              Path archive=Files.createTempFile("dxmd-backup-",".archive");
+              Files.write(archive,new byte[]{1,2,3});
+              Path bad=Path.of(archive.toString()+".bak"); Files.createDirectory(bad);
+              boolean refused=false; try{BackupManager.ensureBackup(archive.toFile());}catch(IOException expected){refused=true;}
+              check(refused,"non-file backup path was not refused"); Files.delete(bad); Files.delete(archive);
+
+              System.out.println("v0.7.11 audit regressions OK; labels="+scanned);
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V0711Audit.java
+          java -Djava.awt.headless=true -cp build/classes V0711Audit
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          ! grep -R 'Files.readAllBytes' src/main/java/ArchiveContextResolver.java src/main/java/DLCArchiveContextResolver.java
+          ! grep -R 'BaseFieldsPanel\|DLCEditorPanel' src/main/java
+          ! jar tf dist/DXMD-Archive-Editor-Pro-v0.7.11.jar | grep -E '^(BaseFieldsPanel|DLCEditorPanel)'
+
+      - name: Package preferred ZIP and checksums
+        shell: bash
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.7.11.jar'
+          HASH="$(sha256sum "$JAR" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" 'DXMD-Archive-Editor-Pro-v0.7.11.jar' > dist/DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256
+          rm -rf build/release-package && mkdir -p build/release-package
+          cp "$JAR" dist/DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256 CODE_AUDIT_v0.7.11.md build/release-package/
+          cat > build/release-package/VERIFY.txt <<'TXT'
+          DXMD Archive Editor Pro v0.7.11 - verification
+          Java 21 or newer required.
+
+          Windows SHA-256 verification:
+            certutil -hashfile DXMD-Archive-Editor-Pro-v0.7.11.jar SHA256
+
+          Compare the result with DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256.
+          TXT
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.11.zip DXMD-Archive-Editor-Pro-v0.7.11.jar DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256 CODE_AUDIT_v0.7.11.md VERIFY.txt)
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.11.jar
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.11.zip
+
+      - name: Commit audited source and documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Complete v0.7.11 code and UI text audit"
+          git push
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.11
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256
+            CODE_AUDIT_v0.7.11.md
+
+      - name: Create v0.7.11 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.11
+          name: DXMD Archive Editor Pro v0.7.11
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.11.jar.sha256
+            CODE_AUDIT_v0.7.11.md
