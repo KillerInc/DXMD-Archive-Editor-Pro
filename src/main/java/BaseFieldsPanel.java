@@ -63,13 +63,14 @@ public class BaseFieldsPanel extends JPanel {
     private JPanel makeLegend(){
         JPanel p=new JPanel(new FlowLayout(FlowLayout.LEFT,10,1));
         p.add(new JLabel("Legend:"));
-        JLabel known=new JLabel("Known / confirmed field"); known.setForeground(new Color(0,128,0));
+        JLabel known=new JLabel("Confirmed / isolated field"); known.setForeground(new Color(0,128,0));
+        JLabel strong=new JLabel("Strong suspected"); strong.setForeground(new Color(70,100,180));
         JLabel modified=new JLabel("Modified from Original"); modified.setForeground(Color.RED);
         JLabel research=new JLabel("Research / not yet confirmed");
         JLabel danger=new JLabel("Warning / save-risk field"); danger.setForeground(new Color(180,90,0));
         JLabel match=new JLabel("Hex matches Original"); match.setOpaque(true); match.setBackground(new Color(0,80,0)); match.setForeground(Color.WHITE); match.setBorder(BorderFactory.createEmptyBorder(1,5,1,5));
         JLabel differs=new JLabel("Hex differs from Original"); differs.setOpaque(true); differs.setBackground(new Color(173,216,230)); differs.setForeground(Color.BLACK); differs.setBorder(BorderFactory.createEmptyBorder(1,5,1,5));
-        p.add(known); p.add(new JLabel("|")); p.add(modified); p.add(new JLabel("|")); p.add(research); p.add(new JLabel("|")); p.add(danger); p.add(new JLabel("|")); p.add(match); p.add(new JLabel("|")); p.add(differs);
+        p.add(known); p.add(new JLabel("|")); p.add(strong); p.add(new JLabel("|")); p.add(modified); p.add(new JLabel("|")); p.add(research); p.add(new JLabel("|")); p.add(danger); p.add(new JLabel("|")); p.add(match); p.add(new JLabel("|")); p.add(differs);
         return p;
     }
 
@@ -131,9 +132,7 @@ public class BaseFieldsPanel extends JPanel {
     static String decimal(byte[] b){if(b.length==4){int bits=(b[0]&255)|((b[1]&255)<<8)|((b[2]&255)<<16)|((b[3]&255)<<24);float f=Float.intBitsToFloat(bits);if(Float.isFinite(f)&&Math.abs(f)>=0.000001f&&Math.abs(f)<10000000f)return Float.toString(f);}long v=0;for(int i=0;i<b.length&&i<8;i++)v|=((long)b[i]&255L)<<(8*i);return Long.toUnsignedString(v);}
     static byte[] parseDecimal(String s,int len){s=s.trim();if(len==4&&s.matches(".*[.eE].*")){float f=Float.parseFloat(s);if(!Float.isFinite(f))throw new IllegalArgumentException("Float value must be finite");int bits=Float.floatToRawIntBits(f);return new byte[]{(byte)bits,(byte)(bits>>>8),(byte)(bits>>>16),(byte)(bits>>>24)};}long max=len>=8?-1L:((1L<<(len*8))-1L);long v=Long.parseLong(s);if(v<0||(len<8&&v>max))throw new IllegalArgumentException("Value must fit in "+len+" byte(s)");byte[] b=new byte[len];for(int i=0;i<len;i++)b[i]=(byte)(v>>>(8*i));return b;}
     private boolean isDangerous(BaseResearchProfiles.Field f){
-        if(f==null)return false;
-        String l=f.label==null?"":f.label.toUpperCase(Locale.ROOT);
-        return f.category!=null&&f.category.startsWith("KNOWN")&&(l.contains(" WIDTH")||l.contains(" HEIGHT"));
+        return FieldConfidenceAudit.isBaseSaveRisk(f);
     }
 
     private String nearbyContext(int row){
@@ -164,21 +163,9 @@ public class BaseFieldsPanel extends JPanel {
 
     private String attributeName(int row){
         BaseResearchProfiles.Field f=model.profile.fields.get(row);
-        if(isDangerous(f)) return "WARNING — CAN BREAK SAVES: "+f.label;
-        boolean known=f.category!=null&&f.category.startsWith("KNOWN");
-        if(known){
-            if(f.label.startsWith("Ammo Stack")){String n=nearbySpecificName(row); if(n!=null)return n+" Ammo Stack";}
-            return f.label;
-        }
-        String u=(f.label==null?"":f.label.toUpperCase(Locale.ROOT));
-        String c=(f.category==null?"":f.category.toUpperCase(Locale.ROOT));
-        if(u.startsWith("RAW FIELD")&&(c.contains("ADAM 3.0")||c.contains("WEAPON")||nearbySpecificName(row)!=null)) return "Suspected: Weapon Stat — Unknown";
-        if(c.contains("SUSPECTED • HEALTH REGENERATION")) return "Suspected: "+f.label.replaceFirst("\\s+#\\d+$","");
-        if(c.contains("SUSPECTED • CONSUMABLE EFFECTS")) return "Suspected: "+f.label.replaceFirst("\\s+#\\d+$","");
-        if(c.contains("WEAPONS / COMBAT")) return "Suspected: Weapon Stat — "+f.label.replaceFirst("\\s+#\\d+$","");
-        if(c.contains("AUGMENT")) return "Suspected: Augmentation Attribute — "+f.label.replaceFirst("\\s+#\\d+$","");
-        if(u.contains("ACCURACY")||u.contains("DAMAGE")||u.contains("RECOIL")||u.contains("RATE_OF_F")||u.contains("AMMO_CAPACITY")) return "Suspected: Weapon Stat — "+f.label.replaceFirst("\\s+#\\d+$","");
-        return "Unidentified";
+        FieldConfidenceAudit.Assessment a=FieldConfidenceAudit.assessBase(f,nearbySpecificName(row),nearbyContext(row));
+        if(a.saveRisk) return "WARNING — CAN BREAK SAVES: "+a.name;
+        return a.name;
     }
 
     private void autoSizeColumns(){if(table.getColumnCount()==0)return;FontMetrics fm=table.getFontMetrics(table.getFont());for(int c=0;c<table.getColumnCount();c++){TableColumn col=table.getColumnModel().getColumn(c);int w=fm.stringWidth(table.getColumnName(c))+28;int rows=Math.min(table.getRowCount(),500);for(int r=0;r<rows;r++){Object v=table.getValueAt(r,c);if(v!=null)w=Math.max(w,fm.stringWidth(String.valueOf(v))+24);}int max=(c<=2)?390:190;col.setPreferredWidth(Math.min(max,Math.max(w,85)));}}
@@ -192,9 +179,12 @@ public class BaseFieldsPanel extends JPanel {
             int row=t.convertRowIndexToModel(viewRow);
             BaseResearchProfiles.Field f=model.profile==null?null:model.profile.fields.get(row);
             boolean modified=f!=null&&!Arrays.equals(f.current,f.original);
-            boolean known=f!=null&&f.category!=null&&f.category.startsWith("KNOWN");
-            boolean danger=isDangerous(f);
-            Color stateColor=modified?Color.RED:(danger?new Color(180,90,0):(known?new Color(0,128,0):null));
+            FieldConfidenceAudit.Assessment assessment=f==null?null:FieldConfidenceAudit.assessBase(f,nearbySpecificName(row),nearbyContext(row));
+            boolean known=assessment!=null&&assessment.confidence==FieldConfidenceAudit.Confidence.CONFIRMED;
+            boolean strong=assessment!=null&&assessment.confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED;
+            boolean danger=assessment!=null&&assessment.saveRisk;
+            setToolTipText(assessment==null?null:assessment.evidence);
+            Color stateColor=modified?Color.RED:(danger?new Color(180,90,0):(known?new Color(0,128,0):(strong?new Color(70,100,180):null)));
             boolean hexColumn=col>=4;
             if(hexColumn&&f!=null){
                 byte[] shown;

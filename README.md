@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.6.13  
+> **Current version:** v0.6.14  
 > **Runtime:** Java 11 or newer  
 > **Primary platform:** Windows
 
@@ -28,7 +28,7 @@ DLC/runtime/DLCPackTactical.layer.0.all.archive
 
 Select `DXMD.exe` and the editor resolves the expected base/DLC structure automatically. Startup detection only walks upward through the application path and validates the DXMD directory layout; it does not scan arbitrary nearby folders.
 
-## v0.6.13 tab layout
+## v0.6.14 tab layout
 
 Confirmed base-game editing is organized by purpose instead of one large Base Game tab:
 
@@ -100,6 +100,18 @@ The v0.6.9 decoded XP/reward overlay remains active in Base Fields. v0.6.12 rest
 
 Comparison profiles currently include Hardcore Revival Normal/Optional, Adam 2.0, Adam 3.0, Tweaks, Master Inventory, No Health Regen variants, More Energy Regeneration Half/Full and Inventory Stacking.
 
+## v0.6.14 field-confidence audit
+
+v0.6.14 audits the meaning of **Known / confirmed** across both Base Fields and DLC Fields. Generated labels such as `DAMAGE_01`, `ACCURACY_01`, `RATE_OF_FIRE_02`, `RECOIL_01`, and numbered variants are structural research hints, not proof that every nearby byte is that exact stat.
+
+- A repeated weapon-stat family is no longer promoted to confirmed simply because its generated label contains `Damage`, `Accuracy`, `Recoil`, etc.
+- Weapon-family rows are shown as suspected components with narrower candidate roles such as horizontal/vertical/spread, base-damage/falloff/range, recoil axis/recovery, fire-rate/burst timing, reload timing, scope bonus, and suppressor penalty.
+- Adam 3.0 rows that are short values changed to zero are called out as **strong suspected Weapon Parts upgrade-cost controls** when they match the documented removal of weapon-upgrade parts costs.
+- DLC confirmation now requires focused cross-mod isolation. Only three DLC rows currently meet that bar: Elite Combat Rifle inventory-grid control, Elite Tranquilizer inventory-grid control, and Elite Tranquilizer magazine capacity.
+- Focused comparisons from I Need The Edge and Master Inventory are used to identify inventory-grid/capacity controls; broad Hardcore Revival changes remain supporting evidence only because Hardcore changes many weapon properties together.
+- Evidence for each assessment is available as a table-cell tooltip. Strong-suspected rows use a separate visual state from confirmed green rows.
+- **Restore Editor Fields to Original** now follows the same strict confidence policy. DLC research/suspected rows are not silently rewritten by selective restore; use the exact `.bak` restore to undo experimental research edits.
+
 ## DLC Fields
 
 Installed DLC packs are displayed as individual tabs. Missing packs are normal and are not created by the tool. DLC research views support original/current values, comparison profiles, presets, User ID import/export, backups and restore functions.
@@ -159,7 +171,7 @@ Linux/macOS:
 The source targets Java 11 with `javac --release 11`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.6.13.jar
+dist/DXMD-Archive-Editor-Pro-v0.6.14.jar
 ```
 
 ## Credits

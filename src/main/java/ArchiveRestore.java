@@ -15,7 +15,7 @@ public final class ArchiveRestore {
         BackupManager.ensureBackup(archive);
         try (RandomAccessFile file = new RandomAccessFile(archive, "rw")) {
             for (BaseResearchProfiles.Field field : profile.fields) {
-                if (field.category == null || !field.category.startsWith("KNOWN")) continue;
+                if (!FieldConfidenceAudit.isBaseConfirmed(field)) continue;
                 file.seek(field.offset);
                 file.write(field.original);
             }
@@ -30,6 +30,7 @@ public final class ArchiveRestore {
         BackupManager.ensureBackup(archive);
         try (RandomAccessFile file = new RandomAccessFile(archive, "rw")) {
             for (DLCProfiles.Field field : profile.fields) {
+                if (!FieldConfidenceAudit.isDlcConfirmed(profile.name, field)) continue;
                 file.seek(field.offset);
                 file.write(field.original);
             }

@@ -1,45 +1,39 @@
-# DXMD Archive Editor Pro v0.6.13
+# DXMD Archive Editor Pro v0.6.14
 
-## DLC Fields context audit
+## Base + DLC field-confidence audit
 
-This release applies the Base Fields context-audit approach to all supported DLC research tabs.
+This release rebuilds the confidence model used by **Base Fields** and **DLC Fields**.
 
-Previously, the DLC **Context / field** column largely displayed generated profile labels directly. That could make research hints look more authoritative than they really were and could produce misleading identities such as numbered duplicate labels or nearby strings that were never confirmed as exact field names.
+The previous research profiles inherited broad nearby labels from clean-vs-modded comparisons. A block named `DAMAGE_01`, for example, may contain the actual damage value, damage falloff/range pieces, upgrade metadata, Weapon Parts costs, display values, or neighboring record data. Seeing six changed bytes near `DAMAGE_01` is not evidence for six separate confirmed Damage fields.
 
-v0.6.13 changes DLC context handling so the visible context is derived conservatively from the actual loaded DLC archive.
+### New confidence rules
 
-### What changed
+- **Confirmed** now means a focused comparison or established editor mapping isolates the field's effect.
+- Repeated `Accuracy`, `Damage`, `Rate of Fire`, `Recoil`, `Reload Speed`, `Scope`, `Silencer`, etc. rows are treated as **Suspected Weapon Stat components**, not confirmed copies of the same stat.
+- Candidate descriptions expose plausible sub-roles without pretending they are decoded: horizontal/vertical/spread accuracy, base damage/damage falloff/range, recoil axes/recovery, fire-rate/burst timing, reload timing, scope bonuses, suppressor penalties, and similar components.
+- Adam 3.0 provides a useful structural discriminator: short weapon-family values that it zeros while removing Weapon Parts upgrade costs are shown as **Strong suspected upgrade-parts-cost** controls rather than as the apparent stat-family name.
+- Hardcore Revival remains important evidence, but because it changes damage, range, accuracy, reload time, recoil and attachment bonuses together, Hardcore-only changes are not enough to confirm one exact sub-stat.
 
-- Added a dedicated `DLCArchiveContextResolver` that scans each loaded DLC archive for readable nearby identifiers.
-- **Nearby context / field** now comes from the archive itself rather than simply echoing the generated profile label.
-- Artificial duplicate suffixes such as `FIRE_PATTERN_01 #2` / `#3` are removed from visible context.
-- Hex-like garbage and weak printable strings are rejected as field context.
-- Arbitrary non-raw generated labels are no longer automatically treated as confirmed/green mappings.
-- The old nearest-semantic-field inference was removed. A nearby known weapon-stat label is no longer allowed to spread a suspected identity across unrelated rows within a large byte window.
-- Only explicitly mapped DLC field families receive confirmed treatment.
-- Unknown rows remain **Unidentified** unless the archive provides defensible nearby context; weapon-like context may be shown only as **Suspected**.
-- When no trustworthy identifier exists, the UI reports **No nearby readable identifier** rather than inventing a precise identity.
-- DLC context is recalculated whenever the archive is reloaded.
-- DLC rows remain in physical archive order and column sorting stays disabled.
+### DLC audit
 
-Generated DLC profile labels are still retained internally as research hints and for comparison/profile compatibility. This update changes how confidence is presented to the user, not the underlying DLC research offsets or comparison bytes.
+The old label-based DLC classifier could mark well over half the DLC research rows green. v0.6.14 removes that behavior.
 
-## Existing Base Fields audit
+Only three DLC rows currently meet the strict confirmed threshold:
 
-The v0.6.12 Base Fields context and continuity audit remains intact. Base Fields continues to derive nearby context conservatively from the loaded base archive, keep research rows in physical archive order, and avoid artificial numbered nearest-string identities.
+- **Elite Combat Rifle Inventory Grid Control** — isolated by Master Inventory plus I Need The Edge/IPOAO comparisons.
+- **Elite Tranquilizer Rifle Inventory Grid Control** — isolated by Master Inventory plus I Need The Edge/IPOAO comparisons.
+- **Elite Tranquilizer Rifle Magazine Capacity** — I Need The Edge documents 10→4 and the Tactical DLC byte changes exactly `0A→04`.
 
-## Existing editor features retained
+Additional rows are retained as strong-suspected where the evidence is useful but not precise enough for confirmed status, including the Elite Battle Rifle grid-control candidate and suppressor damage-penalty controls.
 
-- Weapon Stats, Player Stats, Inventory Stats, Economy & Crafting and XP Rewards categorized editing
-- Base Fields and DLC Fields research tables
-- up to three comparison profiles
-- User ID import/export for sharing field identifications
-- automatic `.bak` preservation before writes
-- exact `.bak` restore
-- selective **Restore Editor Fields to Original** behavior that leaves unrelated mod bytes alone
-- inventory-dimension save-risk warnings
-- automatic base-game and installed-DLC detection from `DXMD.exe`
+### Base audit
+
+Existing established Base editor mappings remain confirmed. Broad generated weapon-stat families in Base Fields remain research data and now receive the same component/candidate treatment as DLC. The audit also identifies 2-byte weapon-family rows that Adam 3.0 zeros as strong upgrade-parts-cost candidates.
+
+### Restore safety
+
+Selective **Restore Editor Fields to Original** now uses the same strict confirmation test. It restores confirmed mappings only. Suspected/unidentified research bytes are intentionally left alone; exact `.bak` restore remains the recovery path for experimental research edits.
 
 ## Requirements
 
-Java 11 or newer. Keep saves and game archives backed up when testing newly identified or inventory-dimension fields.
+Java 11 or newer. Keep game archives and saves backed up when testing research fields, especially inventory-dimension controls.

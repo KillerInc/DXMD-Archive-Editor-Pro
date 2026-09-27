@@ -10,6 +10,6 @@ for /r "%ROOT%src\main\java" %%f in (*.java) do echo "%%f">>"%BUILD%\sources.txt
 javac --release 11 -encoding UTF-8 -d "%CLASSES%" @"%BUILD%\sources.txt"
 if errorlevel 1 exit /b 1
 copy /y "%ROOT%src\main\resources\*.b64" "%CLASSES%\" >nul
-jar cfm "%ROOT%dist\DXMD-Archive-Editor-Pro-v0.6.13.jar" "%ROOT%src\main\resources\MANIFEST.MF" -C "%CLASSES%" .
+jar cfm "%ROOT%dist\DXMD-Archive-Editor-Pro-v0.6.14.jar" "%ROOT%src\main\resources\MANIFEST.MF" -C "%CLASSES%" .
 if errorlevel 1 exit /b 1
-echo Built: %ROOT%dist\DXMD-Archive-Editor-Pro-v0.6.13.jar
+echo Built: %ROOT%dist\DXMD-Archive-Editor-Pro-v0.6.14.jar

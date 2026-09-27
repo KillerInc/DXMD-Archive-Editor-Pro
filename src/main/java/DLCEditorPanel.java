@@ -33,13 +33,14 @@ public class DLCEditorPanel extends JPanel {
     private JPanel makeLegend(){
         JPanel p=new JPanel(new FlowLayout(FlowLayout.LEFT,10,1));
         p.add(new JLabel("Legend:"));
-        JLabel known=new JLabel("Known / identified field"); known.setForeground(new Color(0,128,0));
+        JLabel known=new JLabel("Confirmed / isolated field"); known.setForeground(new Color(0,128,0));
+        JLabel strong=new JLabel("Strong suspected"); strong.setForeground(new Color(70,100,180));
         JLabel modified=new JLabel("Modified from Original"); modified.setForeground(Color.RED);
         JLabel research=new JLabel("Raw / inferred research field");
         JLabel danger=new JLabel("Warning / save-risk field"); danger.setForeground(new Color(180,90,0));
         JLabel match=new JLabel("Hex matches Original"); match.setOpaque(true); match.setBackground(new Color(0,80,0)); match.setForeground(Color.WHITE); match.setBorder(BorderFactory.createEmptyBorder(1,5,1,5));
         JLabel differs=new JLabel("Hex differs from Original"); differs.setOpaque(true); differs.setBackground(new Color(173,216,230)); differs.setForeground(Color.BLACK); differs.setBorder(BorderFactory.createEmptyBorder(1,5,1,5));
-        p.add(known); p.add(new JLabel("|")); p.add(modified); p.add(new JLabel("|")); p.add(research); p.add(new JLabel("|")); p.add(danger); p.add(new JLabel("|")); p.add(match); p.add(new JLabel("|")); p.add(differs);
+        p.add(known); p.add(new JLabel("|")); p.add(strong); p.add(new JLabel("|")); p.add(modified); p.add(new JLabel("|")); p.add(research); p.add(new JLabel("|")); p.add(danger); p.add(new JLabel("|")); p.add(match); p.add(new JLabel("|")); p.add(differs);
         return p;
     }
 
@@ -155,7 +156,7 @@ public class DLCEditorPanel extends JPanel {
         void restoreBackup(){if(!BackupManager.hasBackup(selectedFile)){JOptionPane.showMessageDialog(DLCEditorPanel.this,"No .bak exists for this archive yet.","Restore .bak",JOptionPane.INFORMATION_MESSAGE);return;}int a=JOptionPane.showConfirmDialog(DLCEditorPanel.this,"Replace this DLC archive with its exact .bak copy?","Restore exact backup",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE);if(a!=JOptionPane.YES_OPTION)return;try{BackupManager.restoreBackup(selectedFile);loadSelected();}catch(Exception ex){JOptionPane.showMessageDialog(DLCEditorPanel.this,ex.getMessage(),"Restore .bak error",JOptionPane.ERROR_MESSAGE);}}
 
         String weaponName(){String n=profileName.toLowerCase(Locale.ROOT);if(n.contains("assault"))return "Battle Rifle";if(n.contains("classic"))return "Revolver";if(n.contains("enforcer"))return "Combat Rifle";if(n.contains("intruder"))return "Pistol";if(n.contains("tactical"))return "Tranquilizer Rifle";return "Weapon";}
-        boolean isDangerous(DLCProfiles.Field f){String u=f.label==null?"":f.label.toUpperCase(Locale.ROOT);return u.contains("INVENTORY WIDTH")||u.contains("INVENTORY HEIGHT");}
+        boolean isDangerous(DLCProfiles.Field f){return FieldConfidenceAudit.isDlcSaveRisk(profileName,f);}
 
         String nearbyContext(int row){
             if(row>=0&&row<nearbyContexts.length&&nearbyContexts[row]!=null&&!nearbyContexts[row].trim().isEmpty())return nearbyContexts[row];
@@ -164,25 +165,11 @@ public class DLCEditorPanel extends JPanel {
         }
 
         String attributeFor(DLCProfiles.Field target){
-            if(isDangerous(target))return "WARNING — CAN BREAK SAVES: "+cleanLabel(target.label);
-            String g=semanticGroup(target.label); String w=weaponName();
-            if(g!=null){
-                if(g.equals("Accuracy"))return w+" Accuracy";
-                if(g.equals("Ammo Capacity"))return w+" Ammo Capacity";
-                if(g.equals("Damage"))return w+" Damage";
-                if(g.equals("Fire Pattern"))return w+" Fire Pattern";
-                if(g.equals("Rate of Fire"))return w+" Rate of Fire";
-                if(g.equals("Recoil"))return w+" Recoil";
-                if(g.equals("Reload Speed"))return w+" Reload Speed";
-                if(g.equals("Scope"))return w+" Scope";
-                if(g.equals("Chaff"))return "Chaff Augmentation Attribute";
-                if(g.equals("Weapon Core"))return "Suspected: "+w+" Weapon Stat — Unknown";
-            }
-
             int row=profile.fields.indexOf(target);
             String context=row>=0?nearbyContext(row):"";
-            if(looksWeaponContext(context))return "Suspected: "+w+" Weapon Stat — Unknown";
-            return "Unidentified";
+            FieldConfidenceAudit.Assessment a=FieldConfidenceAudit.assessDlc(profileName,target,context);
+            if(a.saveRisk) return "WARNING — CAN BREAK SAVES: "+a.name;
+            return a.name;
         }
 
         void autoSizeColumns(){FontMetrics fm=table.getFontMetrics(table.getFont());for(int c=0;c<table.getColumnCount();c++){TableColumn col=table.getColumnModel().getColumn(c);int w=fm.stringWidth(table.getColumnName(c))+28;for(int r=0;r<table.getRowCount();r++){Object v=table.getValueAt(r,c);if(v!=null)w=Math.max(w,fm.stringWidth(String.valueOf(v))+24);}int max=(c<=2)?390:190;col.setPreferredWidth(Math.min(max,Math.max(w,80)));}}
@@ -194,8 +181,13 @@ public class DLCEditorPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable t,Object value,boolean selected,boolean focus,int row,int col){
                 setText(value==null?"":String.valueOf(value));
                 int mr=t.convertRowIndexToModel(row);DLCProfiles.Field f=profile.fields.get(mr);
-                boolean modified=!Arrays.equals(f.current,f.original);boolean known=isConfirmedFieldLabel(f.label);boolean danger=isDangerous(f);
-                Color stateColor=modified?Color.RED:(danger?new Color(180,90,0):(known?new Color(0,128,0):null));
+                boolean modified=!Arrays.equals(f.current,f.original);
+                FieldConfidenceAudit.Assessment assessment=FieldConfidenceAudit.assessDlc(profileName,f,nearbyContext(mr));
+                boolean known=assessment.confidence==FieldConfidenceAudit.Confidence.CONFIRMED;
+                boolean strong=assessment.confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED;
+                boolean danger=assessment.saveRisk;
+                setToolTipText(assessment.evidence);
+                Color stateColor=modified?Color.RED:(danger?new Color(180,90,0):(known?new Color(0,128,0):(strong?new Color(70,100,180):null)));
                 boolean hexColumn=col>=4;
                 if(hexColumn){
                     byte[] shown;if(col==4)shown=f.current;else if(col==5)shown=f.original;else shown=referenceBytes(f,selectedComparisons().get(col-6));
@@ -219,12 +211,6 @@ public class DLCEditorPanel extends JPanel {
             void useOriginal(){for(DLCProfiles.Field f:p.fields)f.current=f.original.clone();fireTableDataChanged();}
             void useReference(String n){for(DLCProfiles.Field f:p.fields){byte[] b=referenceBytes(f,n);if(b!=null)f.current=b.clone();}fireTableDataChanged();}
         }
-    }
-
-    static boolean isConfirmedFieldLabel(String label){
-        if(label==null)return false;
-        String g=semanticGroup(label);
-        return g!=null&&!g.equals("Weapon Core")||isInventoryDimensionLabel(label);
     }
 
     static boolean isInventoryDimensionLabel(String label){

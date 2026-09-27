@@ -87,7 +87,7 @@ final class DLCArchiveContextResolver {
         String[] out = new String[fields.size()];
         for (int i = 0; i < fields.size(); i++) {
             DLCProfiles.Field field = fields.get(i);
-            out[i] = cached.contextFor(field.offset, field.label, DLCEditorPanel.isConfirmedFieldLabel(field.label));
+            out[i] = cached.contextFor(field.offset, field.label, FieldConfidenceAudit.isDlcConfirmed(archive.getName(), field));
         }
         return out;
     }
@@ -95,7 +95,7 @@ final class DLCArchiveContextResolver {
     static String fallback(DLCProfiles.Field field) {
         if (field == null) return "No nearby readable identifier";
         String base = legacyBase(field.label);
-        if (isGenericLegacy(base)) return "No nearby readable identifier";
+        if (isGenericLegacy(base) || FieldConfidenceAudit.isGenericWeaponFamilyLabel(field.label)) return "No nearby readable identifier";
         return base;
     }
 
@@ -303,7 +303,7 @@ final class DLCArchiveContextResolver {
 
     private static String fallbackLabel(String label) {
         String base = legacyBase(label);
-        if (isGenericLegacy(base)) return "No nearby readable identifier";
+        if (isGenericLegacy(base) || FieldConfidenceAudit.isGenericWeaponFamilyLabel(label)) return "No nearby readable identifier";
         return base;
     }
 
