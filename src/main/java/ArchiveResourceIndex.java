@@ -6,14 +6,28 @@ import java.util.*;
 final class ArchiveResourceIndex {
     record Location(String resourceName, int chunkIndex, long resourceOffset, long archiveOffset, long chunkLength) {}
     private record Region(long start, long end, String resourceName, int chunkIndex, long resourceBegin) {}
+    private record CacheEntry(long size, long modified, ArchiveResourceIndex index) {}
+
+    private static final HashMap<String,CacheEntry> CACHE = new HashMap<>();
 
     private final ArrayList<Region> regions = new ArrayList<>();
     private final String archiveName;
 
     private ArchiveResourceIndex(String archiveName) { this.archiveName = archiveName; }
 
-    static ArchiveResourceIndex load(File archive) throws IOException {
+    static synchronized ArchiveResourceIndex load(File archive) throws IOException {
         if (archive == null || !archive.isFile()) throw new FileNotFoundException("Archive not found.");
+        String path=archive.getCanonicalPath();
+        long size=archive.length(), modified=archive.lastModified();
+        CacheEntry hit=CACHE.get(path);
+        if(hit!=null && hit.size==size && hit.modified==modified) return hit.index;
+
+        ArchiveResourceIndex out = parse(archive);
+        CACHE.put(path,new CacheEntry(size,modified,out));
+        return out;
+    }
+
+    private static ArchiveResourceIndex parse(File archive) throws IOException {
         ArchiveResourceIndex out = new ArchiveResourceIndex(archive.getName());
         try (RandomAccessFile raf = new RandomAccessFile(archive, "r")) {
             byte[] magic = new byte[4]; raf.readFully(magic);
