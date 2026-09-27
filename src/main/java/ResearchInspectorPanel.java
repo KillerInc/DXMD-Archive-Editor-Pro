@@ -3,6 +3,7 @@ import javax.swing.event.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -41,13 +42,14 @@ public class ResearchInspectorPanel extends JPanel {
     private final JComboBox<String> editType = new JComboBox<>(new String[]{
             "Hex bytes", "Unsigned integer (LE)", "Signed integer (LE)", "Float16 (LE)", "Float32 (LE)"});
     private final JTextField editValue = new JTextField(18);
-    private final JButton applySelected = new JButton("Apply Selected Region");
+    private final JButton applySelected = new JButton("Apply Candidate");
 
     private File baseArchive;
     private final LinkedHashMap<String, File> dlcArchives = new LinkedHashMap<>();
     private Source activeSource;
     private ArchiveResourceIndex index;
     private String[] contexts = new String[0];
+    private boolean rebuildingSources;
 
     private record Source(String title, String profileName, File file, boolean base) {
         @Override public String toString() { return title; }
@@ -72,7 +74,7 @@ public class ResearchInspectorPanel extends JPanel {
         left.add(saveIds);
         left.add(loadIds);
         top.add(left, BorderLayout.WEST);
-        top.add(new JLabel("Research view: changed-byte runs are evidence, not assumed field boundaries."), BorderLayout.SOUTH);
+        top.add(new JLabel("Changed-byte runs are evidence, not field boundaries."), BorderLayout.SOUTH);
         add(top, BorderLayout.NORTH);
 
         table.setRowHeight(22);
@@ -107,7 +109,7 @@ public class ResearchInspectorPanel extends JPanel {
         identity.add(new JLabel("Archive Offset")); identity.add(archiveOffsetField);
 
         JPanel structure = new JPanel(new GridLayout(8, 2, 6, 3));
-        structure.setBorder(BorderFactory.createTitledBorder("Logical Resource / HeaderLib Structure"));
+        structure.setBorder(BorderFactory.createTitledBorder("Resource Structure"));
         structure.add(new JLabel("Logical Resource")); structure.add(logicalResourceField);
         structure.add(new JLabel("HeaderLib")); structure.add(headerLibField);
         structure.add(new JLabel("Resource ID")); structure.add(resourceIdField);
@@ -118,10 +120,10 @@ public class ResearchInspectorPanel extends JPanel {
         structure.add(new JLabel("Flags")); structure.add(flagsField);
 
         JPanel candidate = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-        candidate.setBorder(BorderFactory.createTitledBorder("Candidate Boundary / Interpretation"));
-        candidate.add(new JLabel("Start delta:")); candidate.add(candidateDelta);
+        candidate.setBorder(BorderFactory.createTitledBorder("Candidate"));
+        candidate.add(new JLabel("Delta:")); candidate.add(candidateDelta);
         candidate.add(new JLabel("Width:")); candidate.add(candidateWidth);
-        candidate.add(new JLabel("Interpret as:")); candidate.add(editType);
+        candidate.add(new JLabel("Type:")); candidate.add(editType);
         candidate.add(editValue); candidate.add(applySelected);
 
         JPanel center = new JPanel();
@@ -132,7 +134,7 @@ public class ResearchInspectorPanel extends JPanel {
         rawScroll.setBorder(BorderFactory.createTitledBorder("Raw Context"));
         center.add(rawScroll);
         JScrollPane intScroll = new JScrollPane(interpretations);
-        intScroll.setBorder(BorderFactory.createTitledBorder("Multiple Interpretations"));
+        intScroll.setBorder(BorderFactory.createTitledBorder("Interpretations"));
         center.add(intScroll);
         center.add(candidate);
 
@@ -145,7 +147,7 @@ public class ResearchInspectorPanel extends JPanel {
         JScrollPane evBottom = new JScrollPane(comparisonsTable);
         configureComparisonColumns();
         evTop.setBorder(BorderFactory.createTitledBorder("Evidence"));
-        evBottom.setBorder(BorderFactory.createTitledBorder("Comparison Evidence"));
+        evBottom.setBorder(BorderFactory.createTitledBorder("Comparisons"));
         JSplitPane evSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, evTop, evBottom);
         evSplit.setResizeWeight(.4);
         right.add(evSplit, BorderLayout.CENTER);
@@ -158,9 +160,10 @@ public class ResearchInspectorPanel extends JPanel {
         add(status, BorderLayout.SOUTH);
 
         sourceBox.addActionListener(e -> {
-            if (sourceBox.getSelectedItem() != null) loadSource((Source) sourceBox.getSelectedItem());
+            if (!rebuildingSources && sourceBox.getSelectedItem() != null)
+                loadSourceAsync((Source) sourceBox.getSelectedItem());
         });
-        reload.addActionListener(e -> { if (activeSource != null) loadSource(activeSource); });
+        reload.addActionListener(e -> { if (activeSource != null) loadSourceAsync(activeSource); });
         saveIds.addActionListener(e -> saveIds());
         loadIds.addActionListener(e -> loadIds());
         table.getSelectionModel().addListSelectionListener(e -> {
@@ -176,7 +179,7 @@ public class ResearchInspectorPanel extends JPanel {
             public void changedUpdate(DocumentEvent e) { filter(); }
         });
         sourceBox.setPrototypeDisplayValue(new Source(
-                "Tactical — DLCPackTactical.layer.0.all.archive", "", null, false));
+                "Tactical", "", null, false));
     }
 
     public void setDetectedArchives(File base, Map<String, File> dlc) {
@@ -194,20 +197,56 @@ public class ResearchInspectorPanel extends JPanel {
     private void rebuildSources() {
         Source old = (Source) sourceBox.getSelectedItem();
         String oldProfile = old == null ? null : old.profileName;
-        DefaultComboBoxModel<Source> m = new DefaultComboBoxModel<>();
-        m.addElement(new Source("Base — Game.layer.1.all.archive", "Game.layer.1.all.archive", baseArchive, true));
-        for (String n : DLCProfiles.names())
-            m.addElement(new Source(shortDlc(n) + " — " + n, n, dlcArchives.get(n), false));
-        sourceBox.setModel(m);
-        if (oldProfile != null) {
-            for (int i = 0; i < m.getSize(); i++) {
-                if (m.getElementAt(i).profileName.equals(oldProfile)) {
-                    sourceBox.setSelectedIndex(i);
-                    return;
-                }
+        rebuildingSources = true;
+        try {
+            DefaultComboBoxModel<Source> m = new DefaultComboBoxModel<>();
+            m.addElement(new Source("Base", "Game.layer.1.all.archive", baseArchive, true));
+            for (String n : DLCProfiles.names()) m.addElement(new Source(shortDlc(n), n, dlcArchives.get(n), false));
+            sourceBox.setModel(m);
+            int selected = 0;
+            if (oldProfile != null) for (int i = 0; i < m.getSize(); i++)
+                if (m.getElementAt(i).profileName.equals(oldProfile)) { selected = i; break; }
+            sourceBox.setSelectedIndex(selected);
+        } finally { rebuildingSources = false; }
+        Source selected = (Source) sourceBox.getSelectedItem();
+        if (selected != null) loadSource(selected);
+    }
+
+    private void loadSourceAsync(Source s) {
+        if (s == null) return;
+        if (s.file == null || !s.file.isFile()) { loadSource(s); return; }
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(owner, "Loading " + s.title, Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        JPanel panel = new JPanel(new BorderLayout(8,8));
+        panel.setBorder(BorderFactory.createEmptyBorder(14,16,14,16));
+        JLabel message = new JLabel("Preparing archive...");
+        JProgressBar bar = new JProgressBar();
+        bar.setIndeterminate(true); bar.setStringPainted(true); bar.setString("Working");
+        bar.setPreferredSize(new Dimension(360,22));
+        final int[] dots={0};
+        javax.swing.Timer animation=new javax.swing.Timer(260,e->{dots[0]=(dots[0]+1)%4;bar.setString("Working"+".".repeat(dots[0]));});
+        animation.start();
+        panel.add(message,BorderLayout.NORTH); panel.add(bar,BorderLayout.CENTER);
+        dialog.setContentPane(panel); dialog.pack(); dialog.setResizable(false); dialog.setLocationRelativeTo(this); UiTheme.apply(dialog);
+        SwingWorker<Void,String> worker=new SwingWorker<>() {
+            @Override protected Void doInBackground() throws Exception {
+                publish("Indexing resources..."); ArchiveResourceIndex.load(s.file);
+                publish("Scanning identifiers...");
+                if (s.base) ArchiveContextResolver.resolve(s.file,BaseResearchProfiles.get().fields);
+                else DLCArchiveContextResolver.resolve(s.file,DLCProfiles.get(s.profileName).fields);
+                publish("Mapping structure..."); LogicalResourceCatalog.prewarm();
+                return null;
             }
-        }
-        sourceBox.setSelectedIndex(0);
+            @Override protected void process(java.util.List<String> chunks){if(!chunks.isEmpty())message.setText(chunks.get(chunks.size()-1));}
+            @Override protected void done(){
+                animation.stop();
+                try { get(); bar.setIndeterminate(false); bar.setValue(100); bar.setString("Ready"); loadSource(s); }
+                catch(Exception ex){Throwable c=ex.getCause()==null?ex:ex.getCause();JOptionPane.showMessageDialog(ResearchInspectorPanel.this,c.getMessage()==null?c.toString():c.getMessage(),"Archive load error",JOptionPane.ERROR_MESSAGE);}
+                finally { dialog.dispose(); }
+            }
+        };
+        worker.execute(); dialog.setVisible(true);
     }
 
     private void loadSource(Source s) {
@@ -263,11 +302,8 @@ public class ResearchInspectorPanel extends JPanel {
             model.setRows(rows);
             configureColumns();
             int structured = countStructured(rows);
-            status.setText((s.file != null && s.file.isFile() ? "Loaded " + s.file.getAbsolutePath()
-                    : "Profile loaded; archive file not detected")
-                    + " | " + rows.size() + " research rows"
-                    + (index == null ? "" : " | " + index.regionCount() + " mapped resource chunks")
-                    + " | " + structured + "/" + rows.size() + " rows with HeaderLib logical-resource metadata");
+            status.setText(s.title + " | " + rows.size() + " rows | Structure " + structured + "/" + rows.size()
+                    + (s.file != null && s.file.isFile() ? " | " + s.file.getAbsolutePath() : " | archive not detected"));
             if (!rows.isEmpty()) table.setRowSelectionInterval(0, 0);
         } catch (Exception ex) {
             model.setRows(new ArrayList<>());
@@ -315,14 +351,14 @@ public class ResearchInspectorPanel extends JPanel {
         updateStructure(loc);
 
         FieldConfidenceAudit.Assessment a = assessment(row);
-        confidenceLabel.setText(a.confidence + " — " + a.name);
+        confidenceLabel.setText(a.confidence.toString().replace('_', ' ') + " — " + FieldConfidenceAudit.compactDisplayName(a, row.label));
         String evidence = a.evidence + (a.saveRisk ? "\n\nWARNING: save-risk field." : "");
         LogicalResourceCatalog.LogicalResource lr = logical(loc);
         if (lr != null) {
             long po = lr.payloadOffset(loc.resourceOffset());
-            evidence += "\n\nSTRUCTURE: This byte range is inside " + lr.logicalPath()
-                    + " at payload +0x" + Long.toHexString(po).toUpperCase(Locale.ROOT)
-                    + ". This is structural HeaderLib evidence only; it does not by itself prove the field's gameplay meaning.";
+            evidence += "\n\nStructure: " + lr.logicalPath() + " @ payload +0x"
+                    + Long.toHexString(po).toUpperCase(Locale.ROOT)
+                    + ". Location alone does not prove gameplay meaning.";
         }
         evidenceArea.setText(evidence);
         evidenceArea.setCaretPosition(0);
@@ -438,8 +474,7 @@ public class ResearchInspectorPanel extends JPanel {
         if (b.length == 8) s.append("Float64 LE: ")
                 .append(Double.toString(ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN).getDouble())).append('\n');
         if (delta != 0 || b.length != row.length)
-            s.append("\nBOUNDARY NOTE: this interpretation extends beyond the original changed-byte run (row width ")
-                    .append(row.length).append(").");
+            s.append("\nBoundary differs from diff run (row width ").append(row.length).append(").");
         return s.toString();
     }
 
@@ -512,13 +547,16 @@ public class ResearchInspectorPanel extends JPanel {
             int bits = Float.floatToRawIntBits(f);
             return new byte[]{(byte) bits, (byte) (bits >>> 8), (byte) (bits >>> 16), (byte) (bits >>> 24)};
         }
-        long v = Long.parseLong(text);
-        long min = type.startsWith("Signed") && width < 8 ? -(1L << (width * 8 - 1)) : 0;
-        long max = type.startsWith("Signed") && width < 8 ? (1L << (width * 8 - 1)) - 1
-                : (width == 8 ? Long.MAX_VALUE : (1L << (width * 8)) - 1);
-        if (v < min || v > max) throw new IllegalArgumentException("Value does not fit selected width.");
+        boolean signed = type.startsWith("Signed");
+        int bits = width * 8;
+        BigInteger value = new BigInteger(text);
+        BigInteger modulus = BigInteger.ONE.shiftLeft(bits);
+        BigInteger min = signed ? BigInteger.ONE.shiftLeft(bits - 1).negate() : BigInteger.ZERO;
+        BigInteger max = signed ? BigInteger.ONE.shiftLeft(bits - 1).subtract(BigInteger.ONE) : modulus.subtract(BigInteger.ONE);
+        if (value.compareTo(min) < 0 || value.compareTo(max) > 0) throw new IllegalArgumentException("Value does not fit selected width.");
+        if (value.signum() < 0) value = value.add(modulus);
         byte[] b = new byte[width];
-        for (int i = 0; i < width; i++) b[i] = (byte) (v >>> (8 * i));
+        for (int i = 0; i < width; i++) b[i] = value.shiftRight(8 * i).byteValue();
         return b;
     }
 
@@ -627,7 +665,8 @@ public class ResearchInspectorPanel extends JPanel {
     }
 
     private byte[] sliceOriginal(Row r, int delta, int width) {
-        if (delta < 0 || delta + width > r.original.length) return new byte[width];
+        if (delta < 0 || delta + width > r.original.length)
+            throw new IllegalArgumentException("Load the archive to inspect bytes outside the diff fragment.");
         return Arrays.copyOfRange(r.original, delta, delta + width);
     }
 

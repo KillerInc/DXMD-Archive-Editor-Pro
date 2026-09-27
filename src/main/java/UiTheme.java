@@ -109,8 +109,12 @@ final class UiTheme {
     }
 
     private static void style(Component c) {
-        c.setFont(new Font("Segoe UI", c.getFont() == null ? Font.PLAIN : c.getFont().getStyle(),
-                Math.max(12, c.getFont() == null ? 13 : c.getFont().getSize())));
+        Font oldFont = c.getFont();
+        String oldName = oldFont == null ? "" : oldFont.getName().toLowerCase(java.util.Locale.ROOT);
+        boolean keepMono = oldName.contains("mono") || oldName.contains("courier");
+        c.setFont(new Font(keepMono ? Font.MONOSPACED : "Segoe UI",
+                oldFont == null ? Font.PLAIN : oldFont.getStyle(),
+                Math.max(12, oldFont == null ? 13 : oldFont.getSize())));
 
         if (c instanceof JFrame frame) {
             frame.getContentPane().setBackground(APP_BG);

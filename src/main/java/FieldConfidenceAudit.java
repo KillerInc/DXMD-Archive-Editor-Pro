@@ -176,36 +176,42 @@ final class FieldConfidenceAudit {
     }
 
     static String compactDisplayName(Assessment a, String generatedLabel) {
-        if (a==null) return "Unidentified";
-        String name=a.name==null?"":a.name.trim();
-        String family=weaponFamily(generatedLabel);
-        String lower=name.toLowerCase(Locale.ROOT);
-        if (family!=null && (lower.contains("weapon stat") || lower.contains("upgrade parts cost"))) {
-            String prefix=switch(a.confidence) {
-                case STRONG_SUSPECTED -> "Strong Suspected: ";
-                case SUSPECTED -> "Suspected: ";
-                case CONFIRMED -> "Confirmed: ";
-                case UNIDENTIFIED -> "Unidentified: ";
-            };
-            String stat=compactFamilyStat(family,generatedLabel);
-            if (lower.contains("upgrade parts cost")) return prefix+"Upgrade Cost - "+stat;
-            return prefix+"Weapon Stat - "+stat;
+        if (a == null) return "Unidentified";
+        String name = a.name == null ? "" : a.name.trim();
+        String family = weaponFamily(generatedLabel);
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (family != null && (lower.contains("weapon stat") || lower.contains("upgrade parts cost"))) {
+            String stat = compactFamilyStat(family, generatedLabel);
+            return (lower.contains("upgrade parts cost") ? "Upgrade Cost - " : "Weapon Stat - ") + stat;
         }
-        name=name.replace('—','-');
-        name=name.replace("Weapon Weapon Stat","Weapon Stat");
-        name=name.replace("Inventory Grid Control","Inventory Grid");
-        name=name.replace("Damage-Penalty Control","Damage Penalty");
-        name=name.replace("Suppressor Companion Field","Suppressor Companion");
-        name=name.replace("Augmentation Attribute","Augmentation");
-        name=name.replaceAll("(?i)\\s+component\\s+\\d+\\b","");
-        name=name.replaceAll("(?i)\\s+series\\s+\\d+\\b","");
-        name=name.replaceAll("\\s+-\\s+"," - ");
-        name=name.replaceAll("\\s{2,}"," ").trim();
-        return name;
+        name = name.replace('—','-');
+        name = name.replaceFirst("(?i)^(strong\\s+suspected|suspected|confirmed):\\s*", "");
+        name = name.replace("Weapon Weapon Stat", "Weapon Stat");
+        name = name.replace("Energy Auto-Regeneration", "Energy Auto-Regen");
+        name = name.replace("Inventory Grid Width", "Inventory Width");
+        name = name.replace("Inventory Grid Control", "Inventory Grid");
+        name = name.replace("Magazine Capacity", "Magazine");
+        name = name.replace("Takedown Power Consumption Control", "Takedown Power Consumption");
+        name = name.replace("Standard-Reticle Function Slot / Silencer Override", "Reticle / Silencer Function");
+        name = name.replace("Built-in Silencer Enable Toggle", "Silencer Toggle");
+        name = name.replace("Bolt-Action Override Toggle", "Bolt-Action Toggle");
+        name = name.replace("Experimental Augmentation Gate", "Experimental Aug Gate");
+        name = name.replace("Health Regeneration Disable Component", "Health Regen - Disable");
+        name = name.replace("Damage Reduction L1 Default-Enable Component", "Damage Reduction L1 - Default");
+        name = name.replace("Suppressor Damage-Debuff Component", "Suppressor Debuff");
+        name = name.replace("Suppressor Companion Field", "Suppressor Companion");
+        name = name.replace("Damage-Penalty Control", "Damage Penalty");
+        name = name.replace("Micro-Assembler Experimental/Overclock Gate", "Micro-Assembler Exp/Overclock");
+        name = name.replace("Unresolved Tactical Field (contaminated Micro-Assembler archive)", "Unresolved Tactical Field");
+        name = name.replace("Augmentation Attribute", "Augmentation");
+        name = name.replaceAll("(?i)\\s+component\\s+\\d+\\b", "");
+        name = name.replaceAll("(?i)\\s+series\\s+\\d+\\b", "");
+        name = name.replaceAll("\\s+-\\s+", " - ");
+        return name.replaceAll("\\s{2,}", " ").trim();
     }
 
     private static String compactFamilyStat(String family, String label) {
-        String u=cleanGeneratedLabel(label).toUpperCase(Locale.ROOT).replace(' ','_');
+        String u = cleanGeneratedLabel(label).toUpperCase(Locale.ROOT).replace(' ', '_');
         if (family.equals("Accuracy") && u.contains("ACCURACY_02")) return "Spread";
         if (family.equals("Silencer")) return "Suppressor";
         return family;

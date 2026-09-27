@@ -22,26 +22,26 @@ public class Launcher {
         SwingUtilities.invokeLater(() -> {
             try {
                 UiTheme.install();
-                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.10");
+                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.11");
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setLayout(new BorderLayout(6, 6));
 
                 JPanel installBar = new JPanel(new BorderLayout(6, 6));
                 installBar.setBorder(BorderFactory.createEmptyBorder(7,8,3,8));
                 JButton chooseExe = new JButton("Select DXMD.exe");
-                restoreOriginalsButton = new JButton("Restore Confirmed Fields to Original");
+                restoreOriginalsButton = new JButton("Restore Confirmed Fields");
                 restoreOriginalsButton.setEnabled(false);
                 JPanel installButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
                 installButtons.add(chooseExe); installButtons.add(restoreOriginalsButton);
-                installStatus = new JLabel("Select DXMD.exe to auto-detect the base game and installed DLC archives.");
+                installStatus = new JLabel("Select DXMD.exe to detect Base + DLC archives.");
                 installStatus.setForeground(UiTheme.MUTED);
                 installBar.add(installButtons, BorderLayout.WEST); installBar.add(installStatus, BorderLayout.CENTER);
                 frame.add(installBar, BorderLayout.NORTH);
 
-                BaseEditPanel weaponStats = new BaseEditPanel("Weapon Stats","Confirmed base-game weapon and ammunition controls.",BaseOptionCatalog.weaponStats());
-                BaseEditPanel playerStats = new BaseEditPanel("Player Stats","Confirmed player-energy and augmentation controls.", BaseOptionCatalog.playerStats());
-                BaseEditPanel inventoryStats = new BaseEditPanel("Inventory Stats","Confirmed inventory dimensions and non-ammunition stack controls. Dimension edits can be unsafe when affected items already exist in a save.",BaseOptionCatalog.inventoryStats());
-                BaseEditPanel economyCrafting = new BaseEditPanel("Economy & Crafting","Confirmed store-price and crafting-cost controls.", BaseOptionCatalog.economyCrafting());
+                BaseEditPanel weaponStats = new BaseEditPanel("Weapon Stats","Weapon and ammunition controls.",BaseOptionCatalog.weaponStats());
+                BaseEditPanel playerStats = new BaseEditPanel("Player Stats","Energy and augmentation controls.", BaseOptionCatalog.playerStats());
+                BaseEditPanel inventoryStats = new BaseEditPanel("Inventory Stats","Inventory dimensions and stack sizes. Dimension edits can affect existing saves.",BaseOptionCatalog.inventoryStats());
+                BaseEditPanel economyCrafting = new BaseEditPanel("Economy & Crafting","Shop prices and crafting costs.", BaseOptionCatalog.economyCrafting());
                 XPRewardPanel xpRewards = new XPRewardPanel();
                 Collections.addAll(baseEditPanels,weaponStats,playerStats,inventoryStats,economyCrafting,xpRewards);
                 researchInspector=new ResearchInspectorPanel();
@@ -198,8 +198,8 @@ public class Launcher {
         if(result.baseArchive!=null&&result.baseArchive.isFile())loadBaseArchiveEverywhere(result.baseArchive);else clearBaseArchiveEverywhere("Base archive not found in the validated game runtime folder.");
         researchInspector.setDetectedArchives(result.baseArchive,result.dlcArchives);restoreOriginalsButton.setEnabled(result.baseArchive!=null&&result.baseArchive.isFile());
     }
-    private static void loadBaseArchiveEverywhere(File archive){loadedBaseArchive=archive;for(BaseEditPanel p:baseEditPanels)p.loadArchive(archive);if(researchInspector!=null)researchInspector.setBaseArchive(archive);}
-    private static void clearBaseArchiveEverywhere(String message){loadedBaseArchive=null;for(BaseEditPanel p:baseEditPanels)p.clearArchive(message);if(researchInspector!=null)researchInspector.setBaseArchive(null);}
+    private static void loadBaseArchiveEverywhere(File archive){loadedBaseArchive=archive;for(BaseEditPanel p:baseEditPanels)p.loadArchive(archive);}
+    private static void clearBaseArchiveEverywhere(String message){loadedBaseArchive=null;for(BaseEditPanel p:baseEditPanels)p.clearArchive(message);}
 
     private static void restoreInstalledOriginalFields(Component parent){
         File base=loadedBaseArchive;if(base==null||!base.isFile()){JOptionPane.showMessageDialog(parent,"No base archive is loaded.","Restore",JOptionPane.WARNING_MESSAGE);return;}

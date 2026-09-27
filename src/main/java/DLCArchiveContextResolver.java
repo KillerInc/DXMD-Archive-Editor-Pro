@@ -1,7 +1,5 @@
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,7 +10,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Builds conservative human-readable context for DLC Fields rows directly from
+ * Builds conservative human-readable context for DLC research rows directly from
  * the selected DLC archive. Generated profile labels are treated as research
  * hints only; they are not automatically presented as exact archive identities.
  */
@@ -66,8 +64,8 @@ final class DLCArchiveContextResolver {
         }
     }
 
-    private DLCArchiveContextResolver(byte[] bytes) {
-        scan(bytes);
+    private DLCArchiveContextResolver(File archive) throws IOException {
+        scan(archive);
         buildBlocks();
     }
 
@@ -78,7 +76,7 @@ final class DLCArchiveContextResolver {
         long size = archive.length();
         long modified = archive.lastModified();
         if (cached == null || !path.equals(cachedPath) || size != cachedSize || modified != cachedModified) {
-            cached = new DLCArchiveContextResolver(Files.readAllBytes(archive.toPath()));
+            cached = new DLCArchiveContextResolver(archive);
             cachedPath = path;
             cachedSize = size;
             cachedModified = modified;
@@ -99,21 +97,10 @@ final class DLCArchiveContextResolver {
         return base;
     }
 
-    private void scan(byte[] bytes) {
-        int i = 0;
-        while (i < bytes.length) {
-            if (!isPrintable(bytes[i])) {
-                i++;
-                continue;
-            }
-
-            int start = i;
-            while (i < bytes.length && isPrintable(bytes[i])) i++;
-            int len = i - start;
-            if (len < 4 || len > 120) continue;
-
-            String text = new String(bytes, start, len, StandardCharsets.US_ASCII).trim();
-            if (isReadable(text)) readable.add(new Token(start, i, text));
+    private void scan(File archive) throws IOException {
+        for (ArchiveTextScanner.Token raw : ArchiveTextScanner.scan(archive)) {
+            String text = raw.text();
+            if (isReadable(text)) readable.add(new Token(raw.start(), raw.end(), text));
         }
     }
 

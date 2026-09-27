@@ -10,7 +10,7 @@ import options.ShortOption;
 /**
  * Canonical catalog of normal base-game editor controls.
  *
- * Research-only and suspected values stay in Base Fields. This class contains
+ * Research-only and suspected values stay in Research Inspector. This class contains
  * only mappings that are established strongly enough to expose as ordinary
  * controls.
  */
@@ -175,10 +175,10 @@ public final class BaseOptionCatalog {
     }
 
     private static String dimensionDesc(String what, int defaultValue) {
-        return "Sets the " + what + " in inventory tiles. Clean game value is " + defaultValue + ". Range:0-16 " + dimensionWarning();
+        return what + " in inventory tiles. Default: " + defaultValue + ". Range: 0–16. " + dimensionWarning();
     }
 
     private static String dimensionWarning() {
-        return "WARNING: changing an item dimension while that item exists in a save can make the save unusable or crash the inventory. Drop affected items and save before changing dimensions.";
+        return "Save-risk; a full warning is shown before apply.";
     }
 }

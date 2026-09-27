@@ -1,5 +1,4 @@
 import java.io.*;
-import java.net.URISyntaxException;
 import java.util.*;
 
 public class GameLocator {

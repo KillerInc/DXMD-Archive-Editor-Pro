@@ -77,7 +77,15 @@ public final class FileAnalyzer {
     }
 
     private static boolean readLogicalBoolean(RandomAccessFile file, BooleanOption option, int index) throws IOException {
-        int raw = readU8(file, option.getAddresses().get(index));
-        return raw != (option.getSpecificValueFalseVals(index) & 0xFF);
+        long address = option.getAddresses().get(index);
+        int raw = readU8(file, address);
+        int falseValue = option.getSpecificValueFalseVals(index) & 0xFF;
+        int trueValue = option.getSpecificValueTrueVals(index) & 0xFF;
+        if (raw == falseValue) return false;
+        if (raw == trueValue) return true;
+        throw new IOException("Unexpected boolean byte 0x" + String.format("%02X", raw)
+                + " for " + option.getOptionName() + " at archive offset " + address
+                + " (expected 0x" + String.format("%02X", falseValue)
+                + " or 0x" + String.format("%02X", trueValue) + ").");
     }
 }

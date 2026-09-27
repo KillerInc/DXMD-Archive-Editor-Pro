@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.7.10  
+> **Current version:** v0.7.11  
 > **Runtime:** Java 21 or newer  
 > **Primary platform:** Windows
 
@@ -48,6 +48,10 @@ The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki 
 ## v0.7.3 tab readability fix
 
 v0.7.3 fixes dark/black text that could remain on top-level tabs under Nimbus. The theme now supplies explicit Nimbus text colors for enabled, selected, focused, hover and pressed tab states, and also forces per-tab foreground/background colors at runtime. Selected tabs use white text; inactive tabs use the light application text color.
+
+## v0.7.11 full code and text audit
+
+v0.7.11 audits the complete Java source tree and current Base/DLC research UI. It removes redundant visible wording, streams archive context scans, adds animated background loading for Research Inspector archive switches, fixes full U64 editing, rejects fabricated candidate bytes without a loaded archive, exposes mixed grouped values, preserves monospaced byte views, tightens ARCH/boolean/profile validation, and runs Java 21 lint/regressions. See **CODE_AUDIT_v0.7.11.md**.
 
 ## v0.7.10 concise research attributes
 
@@ -129,7 +133,7 @@ All confirmed XP edits are consolidated into **XP Rewards** rather than being du
 
 DXMD-specific wiki information is treated as strong high-level evidence and is cross-checked against archive-side evidence such as internal names, clean default values, repeated record layouts and controlled mod comparisons. DXHR-only information is not used to identify DXMD fields.
 
-## Base Fields
+## Legacy Base Fields notes (pre-v0.7.1)
 
 **Base Fields** contains confirmed mappings plus thousands of research candidates generated from clean/modded archive comparisons. It currently carries **2,546 non-overlapping field records** and **29 comparison references** after integrating the complete raw archive audit.
 
@@ -188,7 +192,7 @@ Across all five DLC packs, only **3 / 342 rows** currently meet the confirmed th
 
 Base Fields and DLC Fields now include an editable **Float16 (LE)** column immediately beside **Current decimal**. It is enabled only for exact 2-byte fields. The column interprets the two archive bytes as IEEE-754 binary16 in little-endian order; editing it writes the corresponding two-byte half-float representation and immediately updates the decimal/hex views. For example, `2.25` encodes to `80 40`. This is an alternate numeric interpretation for research, not a claim that every 2-byte field is a float.
 
-## DLC Fields
+## Legacy DLC Fields notes (pre-v0.7.1)
 
 Installed DLC packs are displayed as individual tabs. Missing packs are normal and are not created by the tool. DLC research views support original/current values, comparison profiles, presets, User ID import/export, backups and restore functions.
 
@@ -247,7 +251,7 @@ Linux/macOS:
 The source targets Java 21 with `javac --release 21`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.7.10.jar
+dist/DXMD-Archive-Editor-Pro-v0.7.11.jar
 ```
 
 ## Credits

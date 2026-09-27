@@ -11,6 +11,8 @@ final class CompressedResource {
     }
 
     static BufferedReader openParts(Class<?> owner, String... resources) throws IOException {
+        if (owner == null) throw new IllegalArgumentException("Resource owner is required.");
+        if (resources == null || resources.length == 0) throw new IllegalArgumentException("At least one resource is required.");
         ByteArrayOutputStream encoded = new ByteArrayOutputStream();
         byte[] buf = new byte[8192];
         for (String resource : resources) {

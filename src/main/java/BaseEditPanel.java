@@ -67,7 +67,7 @@ public class BaseEditPanel extends JPanel {
     private void buildHeader() {
         JPanel header = new JPanel(new BorderLayout(8, 8));
         JPanel titleRow = new JPanel(new BorderLayout(8, 8));
-        JLabel title = new JLabel(sectionName + " — Game.layer.1.all.archive");
+        JLabel title = new JLabel(sectionName);
         title.setFont(new Font("Courier New", Font.BOLD, 18));
         titleRow.add(title, BorderLayout.CENTER);
 
@@ -215,13 +215,22 @@ public class BaseEditPanel extends JPanel {
             archiveField.setText(file.getAbsolutePath());
             invalidValues.clear();
             dirtyOptions.clear();
-            for (JComponent c : entryValues) c.setEnabled(true);
-            for (JLabel label : entryLabels) label.setForeground(UiTheme.TEXT);
+            ArrayList<String> mixed = new ArrayList<>();
+            for (int i = 0; i < entryValues.size(); i++) {
+                entryValues.get(i).setEnabled(true);
+                Option option = options.get(i);
+                boolean isMixed = option.hasMixedCurrentValues();
+                entryLabels.get(i).setText(option.getOptionName() + (isMixed ? " [mixed]" : ""));
+                entryLabels.get(i).setForeground(isMixed ? UiTheme.SUSPECTED : UiTheme.TEXT);
+                if (isMixed) mixed.add(option.getOptionName());
+            }
             defaults.setEnabled(true);
             current.setEnabled(true);
             showPreset(0, false);
-            description.setText(sectionDescription + "\nLoaded base archive."
-                    + (BackupManager.hasBackup(file) ? " | .bak available" : ""));
+            String mixedText = mixed.isEmpty() ? "" : "\nMixed values: " + String.join(", ", mixed)
+                    + ". Editing synchronizes their mapped addresses.";
+            description.setText(sectionDescription + mixedText
+                    + (BackupManager.hasBackup(file) ? "\nBackup available." : ""));
         } catch (Exception ex) {
             clearArchive("Could not load base archive: " + ex.getMessage());
             JOptionPane.showMessageDialog(this, ex.getMessage(), sectionName + " load error", JOptionPane.ERROR_MESSAGE);
@@ -234,7 +243,10 @@ public class BaseEditPanel extends JPanel {
         invalidValues.clear();
         dirtyOptions.clear();
         for (JComponent c : entryValues) c.setEnabled(false);
-        for (JLabel label : entryLabels) label.setForeground(UiTheme.MUTED);
+        for (int i = 0; i < entryLabels.size(); i++) {
+            entryLabels.get(i).setText(options.get(i).getOptionName());
+            entryLabels.get(i).setForeground(UiTheme.MUTED);
+        }
         defaults.setEnabled(false);
         current.setEnabled(false);
         description.setText(message);
@@ -307,7 +319,7 @@ public class BaseEditPanel extends JPanel {
             }
 
             if (changed.isEmpty()) {
-                description.setText("No " + sectionName + " changes to apply.");
+                description.setText("No changes to apply.");
                 return;
             }
 

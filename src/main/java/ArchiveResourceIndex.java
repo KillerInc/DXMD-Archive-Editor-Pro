@@ -59,7 +59,6 @@ final class ArchiveResourceIndex {
             for (int i = 0; i < links.size(); i++) {
                 if (links.get(i).equalsIgnoreCase(archive.getName())) { selfIndex = i; break; }
             }
-            if (selfIndex < 0 && linkedCount == 1) selfIndex = 0;
 
             for (int fi = 0; fi < fileCount; fi++) {
                 ensureRemaining(raf, 24);
@@ -75,8 +74,8 @@ final class ArchiveResourceIndex {
                     long resourceBegin = readLongLE(raf);
                     long archiveOffset = readLongLE(raf);
                     long length = readLongLE(raf);
-                    boolean rangeValid = archiveOffset >= 0 && length > 0 && archiveOffset <= fileSize
-                            && length <= fileSize - archiveOffset;
+                    boolean rangeValid = archiveOffset >= 0 && length > 0 && resourceBegin >= 0
+                            && archiveOffset <= fileSize && length <= fileSize - archiveOffset;
                     if (archiveIndex == selfIndex && rangeValid)
                         out.regions.add(new Region(archiveOffset, archiveOffset + length, name, ci, resourceBegin));
                 }

@@ -37,5 +37,5 @@ public class DLCReferenceProfiles {
         HashMap<Long,byte[]> p=a.get(profile); if(p==null)return baseField.original;
         byte[] b=p.get(offset); return b==null?baseField.original:b;
     }
-    private static byte[] fromHex(String s){byte[] b=new byte[s.length()/2];for(int i=0;i<b.length;i++)b[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);return b;}
+    private static byte[] fromHex(String s){if(s==null||(s.length()&1)!=0)throw new IllegalArgumentException("Hex length must be even");byte[] b=new byte[s.length()/2];for(int i=0;i<b.length;i++)b[i]=(byte)Integer.parseInt(s.substring(i*2,i*2+2),16);return b;}
 }

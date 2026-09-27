@@ -1,14 +1,19 @@
-# DXMD Archive Editor Pro v0.7.10
+# DXMD Archive Editor Pro v0.7.11
 
-## Concise Research Inspector attributes
+## Full code + redundant-text audit
 
-- Shortens the left-side **Attribute** text without removing underlying research metadata.
-- Applies the same compact naming policy to **Base and all five DLC packs**.
-- Generated weapon-stat series/component noise is collapsed to concise labels.
-- `ACCURACY_02` displays as **Suspected: Weapon Stat - Spread**.
-- Similar families display as Damage, Recoil, Rate of Fire, Ammo Capacity, Reload Speed, Scope, Suppressor, etc.
-- Strong upgrade-cost candidates display as **Strong Suspected: Upgrade Cost - <family>**.
-- Curated Component A/B names are preserved where they identify distinct paired controls.
-- Full original assessment names and evidence remain in the right-side inspector.
+- Audited the complete Java source tree and all current Base/DLC research presentation paths.
+- Removed duplicated confidence wording from Attribute; Status remains the confidence column.
+- Shortened Research Inspector headings/status text and known-stat tab wording without removing evidence.
+- Streamed archive text scanning instead of loading entire archives into heap.
+- Added animated background loading when switching Research Inspector archives.
+- Added true unsigned 64-bit editing through 18446744073709551615.
+- Stopped candidate inspection from inventing zero bytes when an archive is not loaded.
+- Grouped normal controls now mark mixed underlying values.
+- Boolean controls reject unexpected raw encodings instead of silently coercing them.
+- ARCH indexing no longer guesses that a single linked archive is the current file.
+- Preserved monospaced raw-byte/interpretation views.
+- Hardened bundled DLC/profile and compressed-resource parsing.
+- Java 21 compile, lint and profile/UI regressions run before release.
 
-Java 21 or newer remains required.
+See CODE_AUDIT_v0.7.11.md for findings and remaining design debt.

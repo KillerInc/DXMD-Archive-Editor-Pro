@@ -50,7 +50,7 @@ public class BaseResearchProfiles {
     private static Field parseField(String[] x) {
         if(profile==null) throw new IllegalStateException("FIELD encountered before PROFILE");
         int expected=5+profile.referenceNames.size();
-        if(x.length<expected) throw new IllegalArgumentException("Malformed Base Fields row: expected at least "+expected+" columns, got "+x.length);
+        if(x.length<expected) throw new IllegalArgumentException("Malformed Base research row: expected at least "+expected+" columns, got "+x.length);
         long off=Long.parseLong(x[1]); String cat=x[2], label=x[3]; byte[] orig=fromHex(x[4]);
         Field f=new Field(off,cat,label,orig);
         for(int i=0;i<profile.referenceNames.size();i++) f.references.put(profile.referenceNames.get(i),fromHex(x[5+i]));
@@ -75,14 +75,14 @@ public class BaseResearchProfiles {
     }
 
     private static void validateAndSort() throws IOException {
-        if(profile==null) throw new IOException("Base Fields profile was not loaded.");
+        if(profile==null) throw new IOException("Base research profile was not loaded.");
         profile.fields.sort(Comparator.comparingLong(f -> f.offset));
         long previousEnd=-1;
         for(Field f:profile.fields) {
-            if(f.original==null || f.original.length==0) throw new IOException("Zero-length Base Fields record at "+f.offset);
+            if(f.original==null || f.original.length==0) throw new IOException("Zero-length Base research record at "+f.offset);
             long end=f.offset+f.original.length;
-            if(f.offset<0 || end>profile.size) throw new IOException("Base Fields record outside archive bounds at "+f.offset);
-            if(f.offset<previousEnd) throw new IOException("Overlapping/out-of-order Base Fields records near "+f.offset);
+            if(f.offset<0 || end>profile.size) throw new IOException("Base research record outside archive bounds at "+f.offset);
+            if(f.offset<previousEnd) throw new IOException("Overlapping/out-of-order Base research records near "+f.offset);
             previousEnd=end;
             for(String ref:profile.referenceNames) {
                 byte[] value=f.reference(ref);
