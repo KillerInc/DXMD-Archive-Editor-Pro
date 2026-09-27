@@ -1,0 +1,147 @@
+name: Release v0.7.6 Logical Resource Structure
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Update v0.7.6 documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.5', '> **Current version:** v0.7.6')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.5.jar','dist/DXMD-Archive-Editor-Pro-v0.7.6.jar')
+          anchor='## v0.7.5 animated loading / packaged download\n'
+          section='''## v0.7.6 HeaderLib logical-resource structure\n\nv0.7.6 adds verified DXMD HeaderLib/BIN1 structure to the Research Inspector. The supplied `dxmd_dawn_extract.py` and pc_headerlib collection were used to map every current Base research row from flat archive offsets through the containing `.pc_resourcelib` into its exact logical resource payload. The inspector now shows logical assembly resource, HeaderLib, resource/owner IDs, flags, resource type/magic, payload length and offset within the logical resource. Candidate-boundary changes update the payload-relative offset as well.\n\nAll **2,546 / 2,546 Base research rows** resolve to verified logical resources. The supplied HeaderLib collection does not contain matching records for the five DLC research resource libraries, so DLC rows intentionally continue to show their real archive/chunk/resource offsets without invented logical names.\n\nThe animated Loading Archive popup remains active and now reports the HeaderLib logical-resource mapping stage.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.6\n\n## HeaderLib / logical-resource research view\n\n- Adds **Logical Resource** and **Payload Offset** columns to the Research Inspector.\n- Adds a Logical Resource / HeaderLib Structure panel with:\n  - logical assembly resource path\n  - HeaderLib filename and library index\n  - resource ID\n  - owner ID\n  - flags\n  - payload-relative offset\n  - payload length\n  - resource type and header magic\n- Candidate boundary changes recalculate the logical payload-relative offset.\n- Evidence text explicitly distinguishes structural HeaderLib evidence from gameplay-semantic proof.\n- Verified against the supplied DXMD v002 HeaderLib data: **2,546 / 2,546 Base research rows map successfully**.\n- The current supplied HeaderLib set has no matching records for the five DLC research resource libraries; DLC logical-resource cells remain blank instead of being guessed.\n\n## Loading\n\n- The animated Loading Archive popup remains active.\n- First-load status now includes `Loading HeaderLib logical-resource structure...` and `Mapping research fields to logical resources...`.\n- The current verified mappings are bundled and immutable, so this adds negligible runtime cost; no 1.2 GB HeaderLib scan is performed at application startup.\n\n## Download packaging\n\n- Preferred download remains the ZIP containing the Java 21 JAR, SHA-256 checksum file and verification instructions.\n- Direct JAR remains attached to the release.\n\nJava 21 or newer remains required.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Sanity test v0.7.6
+        shell: bash
+        run: |
+          cat > build/V076SourceSanity.java <<'JAVA'
+          import java.nio.file.*;
+          public class V076SourceSanity {
+            public static void main(String[] args) throws Exception {
+              if (BaseResearchProfiles.get().fields.size()!=2546) throw new RuntimeException("Base profile count changed");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              if (dlc!=350) throw new RuntimeException("DLC profile count changed: "+dlc);
+              if (LogicalResourceCatalog.libraryCount()!=2 || LogicalResourceCatalog.mappingCount()!=2)
+                throw new RuntimeException("Unexpected logical-resource catalog size");
+
+              var global=LogicalResourceCatalog.locate("B3E62D6B1E7E6C974E9271254F1EA472.pc_resourcelib",150448846L);
+              if(global==null) throw new RuntimeException("Global include HeaderLib mapping missing");
+              if(!global.logicalPath().equals("[assembly:/scenes/_globalinclude/globalinclude.include].pc_entitytemplate"))
+                throw new RuntimeException("Unexpected global logical resource: "+global.logicalPath());
+              if(global.payloadOffset(150448846L)!=0x16772CL) throw new RuntimeException("803F boundary payload offset regression");
+              if(!global.resourceIdHex().equals("0x800033F9") || !global.ownerIdHex().equals("0x34D0A7EE"))
+                throw new RuntimeException("Global resource IDs changed");
+
+              var live=LogicalResourceCatalog.locate("9930F10393FF9D6B652AC30C4143B46D.pc_resourcelib",30010233L);
+              if(live==null || live.payloadOffset(30010233L)!=160960L)
+                throw new RuntimeException("live_global HeaderLib mapping regression");
+
+              if(LogicalResourceCatalog.locate("3F7F13408DC798B22EAE4EFAA3DBA7FA.pc_resourcelib",0L)!=null)
+                throw new RuntimeException("DLC HeaderLib mapping must not be fabricated");
+
+              String inspector=Files.readString(Path.of("src/main/java/ResearchInspectorPanel.java"));
+              if(!inspector.contains("Logical Resource / HeaderLib Structure") || !inspector.contains("Payload Offset"))
+                throw new RuntimeException("Logical-resource inspector UI missing");
+              if(!inspector.contains("structural HeaderLib evidence only"))
+                throw new RuntimeException("Structural-evidence caveat missing");
+
+              String launcher=Files.readString(Path.of("src/main/java/Launcher.java"));
+              if(!launcher.contains("Loading HeaderLib logical-resource structure"))
+                throw new RuntimeException("HeaderLib loading stage missing");
+              if(!launcher.contains("bar.setIndeterminate(true)") || !launcher.contains("new Timer(260"))
+                throw new RuntimeException("Animated loading regression");
+
+              if (!HalfFloat.formatLE(new byte[]{(byte)0x80,0x40}).equals("2.25"))
+                throw new RuntimeException("Float16 regression");
+              System.out.println("v0.7.6 sanity OK: base=2546 dlc=350 logicalMappings=2");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V076SourceSanity.java
+          java -Djava.awt.headless=true -cp build/classes V076SourceSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.6.jar | grep -q '^Launcher.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.6.jar | grep -q '^ResearchInspectorPanel.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.6.jar | grep -q '^LogicalResourceCatalog.class$'
+
+      - name: Package preferred ZIP and checksums
+        shell: bash
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.7.6.jar'
+          HASH="$(sha256sum "$JAR" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" 'DXMD-Archive-Editor-Pro-v0.7.6.jar' > dist/DXMD-Archive-Editor-Pro-v0.7.6.jar.sha256
+          rm -rf build/release-package
+          mkdir -p build/release-package
+          cp "$JAR" dist/DXMD-Archive-Editor-Pro-v0.7.6.jar.sha256 build/release-package/
+          cat > build/release-package/VERIFY.txt <<'TXT'
+          DXMD Archive Editor Pro v0.7.6 - verification
+
+          This release requires Java 21 or newer.
+
+          Windows SHA-256 verification:
+            certutil -hashfile DXMD-Archive-Editor-Pro-v0.7.6.jar SHA256
+
+          Compare the result with DXMD-Archive-Editor-Pro-v0.7.6.jar.sha256.
+
+          The ZIP/JAR is not Authenticode-signed. Browser/SmartScreen reputation warnings can occur for uncommon unsigned Java downloads even when the checksum is correct.
+          TXT
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.6.zip DXMD-Archive-Editor-Pro-v0.7.6.jar DXMD-Archive-Editor-Pro-v0.7.6.jar.sha256 VERIFY.txt)
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.6.jar
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.6.zip
+
+      - name: Commit documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md RELEASE_NOTES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Document v0.7.6 logical resource structure"
+            git push
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.6
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.6.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.6.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.6.jar.sha256
+
+      - name: Create v0.7.6 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.6
+          name: DXMD Archive Editor Pro v0.7.6
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.6.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.6.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.6.jar.sha256
