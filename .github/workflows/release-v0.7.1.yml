@@ -1,0 +1,91 @@
+name: Release v0.7.1 Research Inspector
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Update v0.7.1 documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.6.16', '> **Current version:** v0.7.1')
+          s=s.replace('> **Runtime:** Java 11 or newer', '> **Runtime:** Java 21 or newer')
+          old='''- **Base Fields** — the full base-game diagnostic/research table.\n- **DLC Fields** — installed DLC research/edit tabs with archive-derived nearby context.\n\n**Base Fields** and **DLC Fields** are intentionally the last two top-level tabs. The old **Base Game** tab was removed after its confirmed edits were assigned to normal categories.\n'''
+          new='''- **Research Inspector** — unified Base + DLC reverse-engineering workspace with archive-resource/chunk mapping, raw byte context, multiple integer/Float16/Float32 interpretations, comparison evidence, editable candidate boundaries and User ID annotations.\n\nThe legacy **Base Fields** and **DLC Fields** research tabs were replaced in v0.7.1 by the unified Research Inspector. Confirmed editing stays in the five categorized tabs above.\n'''
+          s=s.replace(old,new)
+          anchor='## Normal edit behavior\n'
+          section='''## v0.7.1 Research Inspector\n\nv0.7.1 replaces the old flat Base Fields / DLC Fields research tables with a unified inspector. A changed-byte run is no longer assumed to define the real field boundary.\n\n- Parses each loaded DXMD `ARCH` directory and maps archive offsets to the real internal `.pc_resourcelib`, chunk number and resource-local offset.\n- Supports Base plus Assault, Classic, Enforcer, Intruder and Tactical DLC profiles from one archive selector.\n- Shows raw bytes around the selected candidate region and decodes the same selection as little-endian unsigned/signed integers, Float16, Float32 and Float64 where width permits.\n- Candidate start can be shifted ±8 bytes and width can be changed to 1/2/4/8 bytes. This exposes boundary mistakes such as a `80 3F` diff fragment that is actually the upper half of `00 00 80 3F` (`Float32 1.0`).\n- Research edits are allowed through Hex, integer, Float16 or Float32 interpretations. Boundary-changing edits receive an explicit warning and preserve a `.bak` first.\n- Existing confidence/evidence rules and comparison profiles remain visible. User ID annotations plus TSV import/export are retained.\n\nThe full supplied OG validation mapped **2,546 / 2,546 Base rows** and **350 / 350 DLC rows** to internal archive resources with zero unmapped research rows.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          s=s.replace('The source targets Java 11 with `javac --release 11`.', 'The source targets Java 21 with `javac --release 21`.')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.6.16.jar','dist/DXMD-Archive-Editor-Pro-v0.7.1.jar')
+          s=s.replace('Base Fields and DLC Fields can export/import User ID annotations as TSV.', 'The Research Inspector can export/import Base and DLC User ID annotations as TSV.')
+          p.write_text(s)
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.1\n\n## Unified Research Inspector\n\nThis release replaces the legacy Base Fields and DLC Fields research tabs with one archive-aware Research Inspector while keeping the confirmed Weapon Stats, Player Stats, Inventory Stats, Economy & Crafting and XP Rewards tabs.\n\n### Research display\n- Maps every research offset to its actual internal resource, chunk and resource-local offset by parsing the loaded archive directory.\n- One selector covers Base and all five supported DLC archives.\n- Displays raw context around the selected region instead of treating a changed-byte run as a guaranteed field boundary.\n- Decodes candidate regions as little-endian integer, Float16, Float32 and Float64 values where applicable.\n- Candidate start can move ±8 bytes and width can be 1, 2, 4 or 8 bytes.\n- Automatically suggests common 4-byte Float32 boundary corrections for 2/3-byte diff fragments when surrounding bytes form a plausible float.\n- Shows the existing confidence assessment, audit evidence and mod-comparison values beside the selected region.\n\n### Editing and research notes\n- Candidate regions can be edited as raw Hex, signed/unsigned integer, Float16 or Float32 values.\n- Editing outside the original diff-run boundary produces an explicit warning.\n- `.bak` behavior remains in place before writes.\n- User ID annotations remain editable and can still be imported/exported as TSV.\n\n### Validation\nUsing the supplied clean OG archives, all 2,546 Base research rows and all 350 DLC research rows mapped to an internal resource/chunk with zero unmapped rows. The original `80 3F` “Weird” case resolves to the full `00 00 80 3F` Float32 value (`1.0`) at the proper resource-local offset.\n\n### Runtime\nJava 21 or newer is required.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Sanity test profiles and bytecode
+        shell: bash
+        run: |
+          cat > build/V071SourceSanity.java <<'JAVA'
+          public class V071SourceSanity {
+            public static void main(String[] args) {
+              if (BaseResearchProfiles.get().fields.size()!=2546) throw new RuntimeException("Base profile count changed");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              if (dlc!=350) throw new RuntimeException("DLC profile count changed: "+dlc);
+              if (!HalfFloat.formatLE(new byte[]{(byte)0x80,0x40}).equals("2.25")) throw new RuntimeException("Float16 regression");
+              System.out.println("v0.7.1 profiles OK: base=2546 dlc=350");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V071SourceSanity.java
+          java -cp build/classes V071SourceSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.1.jar | grep -q '^ResearchInspectorPanel.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.1.jar | grep -q '^ArchiveResourceIndex.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.1.jar | grep -q '^Launcher.class$'
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.1.jar
+
+      - name: Commit documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md RELEASE_NOTES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Document v0.7.1 Research Inspector"
+            git push
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.1
+          path: dist/DXMD-Archive-Editor-Pro-v0.7.1.jar
+
+      - name: Create v0.7.1 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.1
+          name: DXMD Archive Editor Pro v0.7.1
+          body_path: RELEASE_NOTES.md
+          files: dist/DXMD-Archive-Editor-Pro-v0.7.1.jar
