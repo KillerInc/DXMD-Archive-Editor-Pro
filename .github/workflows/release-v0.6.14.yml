@@ -1,0 +1,100 @@
+name: Release v0.6.14
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.6.14.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Build JAR
+        run: bash build.sh
+
+      - name: Run field-confidence sanity audit
+        run: |
+          cat > build/AuditSanity.java <<'EOF'
+          public class AuditSanity {
+              public static void main(String[] args) {
+                  int baseConfirmed=0, baseStrong=0;
+                  for (BaseResearchProfiles.Field f:BaseResearchProfiles.get().fields) {
+                      if (FieldConfidenceAudit.isBaseConfirmed(f)) baseConfirmed++;
+                      if (FieldConfidenceAudit.assessBase(f,null,"").confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED) baseStrong++;
+                  }
+                  int dlcConfirmed=0, dlcStrong=0;
+                  int assault=0, classicPack=0, enforcer=0, intruder=0, tactical=0;
+                  for (String name:DLCProfiles.names()) {
+                      for (DLCProfiles.Field f:DLCProfiles.get(name).fields) {
+                          if (FieldConfidenceAudit.isDlcConfirmed(name,f)) {
+                              dlcConfirmed++;
+                              if (name.contains("Assault")) assault++;
+                              else if (name.contains("Classic")) classicPack++;
+                              else if (name.contains("Enforcer")) enforcer++;
+                              else if (name.contains("Intruder")) intruder++;
+                              else if (name.contains("Tactical")) tactical++;
+                          }
+                          if (FieldConfidenceAudit.assessDlc(name,f,"").confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED) dlcStrong++;
+                      }
+                  }
+                  if (baseConfirmed!=217) throw new RuntimeException("Expected 217 confirmed Base rows, got "+baseConfirmed);
+                  if (baseStrong!=23) throw new RuntimeException("Expected 23 strong-suspected Base rows, got "+baseStrong);
+                  if (dlcConfirmed!=3) throw new RuntimeException("Expected 3 confirmed DLC rows, got "+dlcConfirmed);
+                  if (dlcStrong!=47) throw new RuntimeException("Expected 47 strong-suspected DLC rows, got "+dlcStrong);
+                  if (assault!=0 || classicPack!=0 || enforcer!=1 || intruder!=0 || tactical!=2)
+                      throw new RuntimeException("Unexpected per-pack confirmed DLC counts: "+assault+","+classicPack+","+enforcer+","+intruder+","+tactical);
+                  System.out.println("Audit OK: Base confirmed="+baseConfirmed+", Base strong="+baseStrong+", DLC confirmed="+dlcConfirmed+", DLC strong="+dlcStrong);
+              }
+          }
+          EOF
+          javac --release 11 -cp build/classes -d build/classes build/AuditSanity.java
+          java -cp build/classes AuditSanity
+          rm -f build/classes/AuditSanity.class build/AuditSanity.java
+
+      - name: Smoke-check JAR contents
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.6.14.jar'
+          test -s "$JAR"
+          jar tf "$JAR" | grep -q '^Launcher.class$'
+          jar tf "$JAR" | grep -q '^FieldConfidenceAudit.class$'
+          jar tf "$JAR" | grep -q '^BaseFieldsPanel.class$'
+          jar tf "$JAR" | grep -q '^DLCEditorPanel.class$'
+          jar tf "$JAR" | grep -q '^ArchiveContextResolver.class$'
+          jar tf "$JAR" | grep -q '^DLCArchiveContextResolver.class$'
+          jar tf "$JAR" | grep -q '^FieldIdentificationIO.class$'
+          jar tf "$JAR" | grep -q '^dlc_profiles.tsv.gz.b64$'
+          jar tf "$JAR" | grep -q '^dlc_compare_profiles.tsv.gz.b64$'
+          jar tf "$JAR" | grep -q '^base_research_v069_patch.tsv.gz.b64$'
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.6.14
+          path: dist/DXMD-Archive-Editor-Pro-v0.6.14.jar
+          if-no-files-found: error
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG='v0.6.14'
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.6.14.jar'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title 'DXMD Archive Editor Pro v0.6.14' --notes-file RELEASE_NOTES.md
+            gh release upload "$TAG" "$JAR" --clobber
+          else
+            gh release create "$TAG" "$JAR" --target main --title 'DXMD Archive Editor Pro v0.6.14' --notes-file RELEASE_NOTES.md
+          fi
