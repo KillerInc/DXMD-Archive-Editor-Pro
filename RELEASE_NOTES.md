@@ -1,18 +1,31 @@
-# DXMD Archive Editor Pro v0.7.5
+# DXMD Archive Editor Pro v0.7.6
 
-## Animated archive loading
+## HeaderLib / logical-resource research view
 
-- The Loading Archive bar now uses a continuously animated indeterminate state while background archive preparation is running.
-- A small `Working...` text animation provides a second obvious activity cue even if the platform's progress-bar animation is subtle.
-- Status text still changes through resolving files, reading the archive directory, indexing resources, scanning identifiers and mapping research fields.
-- At completion the bar switches to determinate mode, fills to 100% and briefly shows `Ready`.
-- The dark theme now explicitly themes `JProgressBar`, with a faster repaint interval/cycle.
+- Adds **Logical Resource** and **Payload Offset** columns to the Research Inspector.
+- Adds a Logical Resource / HeaderLib Structure panel with:
+  - logical assembly resource path
+  - HeaderLib filename and library index
+  - resource ID
+  - owner ID
+  - flags
+  - payload-relative offset
+  - payload length
+  - resource type and header magic
+- Candidate boundary changes recalculate the logical payload-relative offset.
+- Evidence text explicitly distinguishes structural HeaderLib evidence from gameplay-semantic proof.
+- Verified against the supplied DXMD v002 HeaderLib data: **2,546 / 2,546 Base research rows map successfully**.
+- The current supplied HeaderLib set has no matching records for the five DLC research resource libraries; DLC logical-resource cells remain blank instead of being guessed.
+
+## Loading
+
+- The animated Loading Archive popup remains active.
+- First-load status now includes `Loading HeaderLib logical-resource structure...` and `Mapping research fields to logical resources...`.
+- The current verified mappings are bundled and immutable, so this adds negligible runtime cost; no 1.2 GB HeaderLib scan is performed at application startup.
 
 ## Download packaging
 
-- Preferred download: `DXMD-Archive-Editor-Pro-v0.7.5.zip`.
-- ZIP contains the JAR, `DXMD-Archive-Editor-Pro-v0.7.5.jar.sha256`, and `VERIFY.txt`.
-- The direct JAR remains attached to the GitHub release.
-- Browser reputation warnings can still occur for unsigned/uncommon Java applications; a trusted code-signing certificate would be required for a stronger publisher-reputation signal.
+- Preferred download remains the ZIP containing the Java 21 JAR, SHA-256 checksum file and verification instructions.
+- Direct JAR remains attached to the release.
 
 Java 21 or newer remains required.
