@@ -1,0 +1,93 @@
+name: Release v0.7.4 Loading and Readability
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Update v0.7.4 documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.3', '> **Current version:** v0.7.4')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.3.jar','dist/DXMD-Archive-Editor-Pro-v0.7.4.jar')
+          anchor='## v0.7.2 Dark research UI\n'
+          section='''## v0.7.4 loading/readability pass\n\nv0.7.4 fixes the remaining dark-theme text that could still be painted black inside the confirmed-stat panels and adds a modal **Loading Archive** progress dialog for first-time archive preparation. Base archive directory parsing and readable-context scanning now happen in a `SwingWorker`, keeping the interface responsive while the progress dialog reports the current stage. Parsed archive-resource indexes are cached by path/size/modified-time and reused by the Research Inspector.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.4\n\n## Readability\n\n- Fixes remaining black text in the confirmed-stat tabs.\n- Enabled option labels now use the light dark-theme text color.\n- Valid numeric values use the light theme text; invalid values use the warning color.\n- Disabled labels use the muted theme color.\n\n## Loading Archive progress\n\n- Adds a small dark-themed modal loading popup with a 0–100% progress bar.\n- Shows stages for resolving game files, reading the ARCH directory, indexing resources, scanning readable identifiers, mapping research fields and populating editor views.\n- Expensive Base research preparation runs in a `SwingWorker`, so the progress UI stays responsive.\n- Startup auto-detection uses the same loading popup.\n- Parsed `ArchiveResourceIndex` data is cached and reused when the Research Inspector opens the same unchanged archive.\n\nJava 21 or newer remains required.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Sanity test v0.7.4
+        shell: bash
+        run: |
+          cat > build/V074SourceSanity.java <<'JAVA'
+          import java.nio.file.*;
+          public class V074SourceSanity {
+            public static void main(String[] args) throws Exception {
+              if (BaseResearchProfiles.get().fields.size()!=2546) throw new RuntimeException("Base profile count changed");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              if (dlc!=350) throw new RuntimeException("DLC profile count changed: "+dlc);
+              String base=Files.readString(Path.of("src/main/java/BaseEditPanel.java"));
+              if (base.contains("Color.BLACK")) throw new RuntimeException("BaseEditPanel still hard-codes black text");
+              if (!base.contains("UiTheme.TEXT") || !base.contains("UiTheme.MUTED")) throw new RuntimeException("Theme text colors missing");
+              String launcher=Files.readString(Path.of("src/main/java/Launcher.java"));
+              if (!launcher.contains("SwingWorker<PendingLoad") || !launcher.contains("new JProgressBar(0,100)")) throw new RuntimeException("Loading progress worker missing");
+              if (!launcher.contains("Loading Archive")) throw new RuntimeException("Loading dialog missing");
+              if (!HalfFloat.formatLE(new byte[]{(byte)0x80,0x40}).equals("2.25")) throw new RuntimeException("Float16 regression");
+              System.out.println("v0.7.4 sanity OK: base=2546 dlc=350");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V074SourceSanity.java
+          java -Djava.awt.headless=true -cp build/classes V074SourceSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.4.jar | grep -q '^ResearchInspectorPanel.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.4.jar | grep -q '^ArchiveResourceIndex.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.4.jar | grep -q '^UiTheme.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.4.jar | grep -q '^Launcher.class$'
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.4.jar
+
+      - name: Commit documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md RELEASE_NOTES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Document v0.7.4 loading and readability pass"
+            git push
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.4
+          path: dist/DXMD-Archive-Editor-Pro-v0.7.4.jar
+
+      - name: Create v0.7.4 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.4
+          name: DXMD Archive Editor Pro v0.7.4
+          body_path: RELEASE_NOTES.md
+          files: dist/DXMD-Archive-Editor-Pro-v0.7.4.jar
