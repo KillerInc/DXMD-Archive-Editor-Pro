@@ -15,17 +15,20 @@ public class Launcher {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
-                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.1");
+                UiTheme.install();
+                JFrame frame = new JFrame("DXMD Archive Editor Pro v0.7.2");
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setLayout(new BorderLayout(6, 6));
 
                 JPanel installBar = new JPanel(new BorderLayout(6, 6));
+                installBar.setBorder(BorderFactory.createEmptyBorder(7,8,3,8));
                 JButton chooseExe = new JButton("Select DXMD.exe");
                 restoreOriginalsButton = new JButton("Restore Confirmed Fields to Original");
                 restoreOriginalsButton.setEnabled(false);
                 JPanel installButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
                 installButtons.add(chooseExe); installButtons.add(restoreOriginalsButton);
                 installStatus = new JLabel("Select DXMD.exe to auto-detect the base game and installed DLC archives.");
+                installStatus.setForeground(UiTheme.MUTED);
                 installBar.add(installButtons, BorderLayout.WEST); installBar.add(installStatus, BorderLayout.CENTER);
                 frame.add(installBar, BorderLayout.NORTH);
 
@@ -40,10 +43,14 @@ public class Launcher {
                 JTabbedPane tabs = new JTabbedPane();
                 tabs.addTab("Weapon Stats", weaponStats); tabs.addTab("Player Stats", playerStats); tabs.addTab("Inventory Stats", inventoryStats);
                 tabs.addTab("Economy & Crafting", economyCrafting); tabs.addTab("XP Rewards", xpRewards); tabs.addTab("Research Inspector", researchInspector);
+                tabs.setSelectedComponent(researchInspector);
                 frame.add(tabs, BorderLayout.CENTER);
 
                 chooseExe.addActionListener(e -> chooseGameExe(frame)); restoreOriginalsButton.addActionListener(e -> restoreInstalledOriginalFields(frame));
-                frame.setResizable(true); frame.setSize(1500,900); frame.setLocationRelativeTo(null); frame.setVisible(true);
+                frame.setResizable(true); frame.setMinimumSize(new Dimension(1280,760)); frame.setSize(1500,900); frame.setLocationRelativeTo(null);
+                UiTheme.apply(frame);
+                installStatus.setForeground(UiTheme.MUTED);
+                frame.setVisible(true);
                 SwingUtilities.invokeLater(() -> autoDetectFromApplication(frame));
             } catch (Throwable t) {
                 t.printStackTrace(); String msg=t.getMessage(); if(msg==null||msg.isBlank())msg=t.getClass().getName();
