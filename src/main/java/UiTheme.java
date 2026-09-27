@@ -72,6 +72,15 @@ final class UiTheme {
         UIManager.put("TabbedPane.background", new ColorUIResource(APP_BG));
         UIManager.put("TabbedPane.foreground", new ColorUIResource(TEXT));
         UIManager.put("TabbedPane.selected", new ColorUIResource(PANEL_ALT));
+        UIManager.put("TabbedPane.selectedForeground", new ColorUIResource(Color.WHITE));
+        putNimbusTabText("Enabled", TEXT);
+        putNimbusTabText("Disabled", MUTED);
+        putNimbusTabText("Selected", Color.WHITE);
+        putNimbusTabText("Focused+Selected", Color.WHITE);
+        putNimbusTabText("MouseOver", Color.WHITE);
+        putNimbusTabText("Pressed", Color.WHITE);
+        putNimbusTabText("MouseOver+Selected", Color.WHITE);
+        putNimbusTabText("Pressed+Selected", Color.WHITE);
         UIManager.put("Panel.background", new ColorUIResource(PANEL));
         UIManager.put("Label.foreground", new ColorUIResource(TEXT));
         UIManager.put("TitledBorder.titleColor", new ColorUIResource(MUTED));
@@ -79,6 +88,10 @@ final class UiTheme {
         UIManager.put("OptionPane.messageForeground", new ColorUIResource(TEXT));
         UIManager.put("ToolTip.background", new ColorUIResource(HEADER));
         UIManager.put("ToolTip.foreground", new ColorUIResource(TEXT));
+    }
+
+    private static void putNimbusTabText(String state, Color color) {
+        UIManager.put("TabbedPane:TabbedPaneTab[" + state + "].textForeground", new ColorUIResource(color));
     }
 
     static void apply(Component root) {
@@ -149,6 +162,16 @@ final class UiTheme {
             tabs.setBackground(APP_BG);
             tabs.setForeground(TEXT);
             tabs.setBorder(new LineBorder(BORDER));
+            for (int i = 0; i < tabs.getTabCount(); i++) {
+                tabs.setForegroundAt(i, i == tabs.getSelectedIndex() ? Color.WHITE : TEXT);
+                tabs.setBackgroundAt(i, i == tabs.getSelectedIndex() ? PANEL_ALT : APP_BG);
+            }
+            tabs.addChangeListener(e -> {
+                for (int i = 0; i < tabs.getTabCount(); i++) {
+                    tabs.setForegroundAt(i, i == tabs.getSelectedIndex() ? Color.WHITE : TEXT);
+                    tabs.setBackgroundAt(i, i == tabs.getSelectedIndex() ? PANEL_ALT : APP_BG);
+                }
+            });
         } else if (c instanceof JScrollPane scroll) {
             scroll.setBackground(PANEL);
             scroll.setBorder(new LineBorder(BORDER));
