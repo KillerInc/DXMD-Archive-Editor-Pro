@@ -1,0 +1,56 @@
+name: Release v0.6.13
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.6.13.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Build JAR
+        run: bash build.sh
+
+      - name: Smoke-check JAR contents
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.6.13.jar'
+          test -f "$JAR"
+          jar tf "$JAR" | grep -q '^Launcher.class$'
+          jar tf "$JAR" | grep -q '^DLCEditorPanel.class$'
+          jar tf "$JAR" | grep -q '^DLCArchiveContextResolver.class$'
+          jar tf "$JAR" | grep -q '^dlc_profiles.tsv.gz.b64$'
+          jar tf "$JAR" | grep -q '^base_research.part01.b64$'
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.6.13
+          path: dist/DXMD-Archive-Editor-Pro-v0.6.13.jar
+          if-no-files-found: error
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG='v0.6.13'
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.6.13.jar'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title 'DXMD Archive Editor Pro v0.6.13' --notes-file RELEASE_NOTES.md
+            gh release upload "$TAG" "$JAR" --clobber
+          else
+            gh release create "$TAG" "$JAR" --target main --title 'DXMD Archive Editor Pro v0.6.13' --notes-file RELEASE_NOTES.md
+          fi
