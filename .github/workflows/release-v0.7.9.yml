@@ -1,0 +1,160 @@
+name: Release v0.7.9 Comparison Table Alignment
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.9.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Replace comparison text block with real table
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('src/main/java/ResearchInspectorPanel.java')
+          s=p.read_text()
+
+          s=s.replace('''    private final JTextArea evidenceArea = new JTextArea(8, 34);\n    private final JTextArea comparisonsArea = new JTextArea(12, 34);''',
+                      '''    private final JTextArea evidenceArea = new JTextArea(8, 34);\n    private final ComparisonModel comparisonModel = new ComparisonModel();\n    private final JTable comparisonsTable = new JTable(comparisonModel);''')
+
+          s=s.replace('''        comparisonsArea.setEditable(false);\n        comparisonsArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));''',
+                      '''        comparisonsTable.setRowHeight(22);\n        comparisonsTable.setFillsViewportHeight(true);\n        comparisonsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);\n        comparisonsTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);\n        comparisonsTable.getTableHeader().setReorderingAllowed(false);''')
+
+          s=s.replace('''        JScrollPane evBottom = new JScrollPane(comparisonsArea);''',
+                      '''        JScrollPane evBottom = new JScrollPane(comparisonsTable);\n        configureComparisonColumns();''')
+
+          s=s.replace('''        comparisonsArea.setText(comparisons(row));\n        comparisonsArea.setCaretPosition(0);''',
+                      '''        comparisonModel.setRows(comparisonRows(row));''')
+
+          s=s.replace('''        comparisonsArea.setText("");''',
+                      '''        comparisonModel.setRows(new ArrayList<>());''')
+
+          old='''    private String comparisons(Row row) {\n        StringBuilder s = new StringBuilder();\n        s.append(String.format("%-30s  %-22s  %s%n", "Source", "Hex", "Decoded"));\n        s.append("Original                       ")\n                .append(String.format("%-22s", hexSpaced(row.original)))\n                .append("  ").append(shortDecode(row.original)).append('\\n');\n        if (activeSource.base) {\n            BaseResearchProfiles.Field f = (BaseResearchProfiles.Field) row.field;\n            for (Map.Entry<String, byte[]> e : f.references.entrySet()) {\n                if (e.getValue() != null && !Arrays.equals(e.getValue(), f.original))\n                    s.append(String.format("%-30s  %-22s  %s%n", trim(e.getKey(), 30),\n                            hexSpaced(e.getValue()), shortDecode(e.getValue())));\n            }\n        } else {\n            DLCProfiles.Field f = (DLCProfiles.Field) row.field;\n            for (String n : DLCReferenceProfiles.namesFor(activeSource.profileName)) {\n                byte[] b = DLCReferenceProfiles.get(activeSource.profileName, n, f.offset, f);\n                if (b != null && !Arrays.equals(b, f.original))\n                    s.append(String.format("%-30s  %-22s  %s%n", trim(n, 30), hexSpaced(b), shortDecode(b)));\n            }\n        }\n        return s.toString();\n    }'''
+          new='''    private ArrayList<ComparisonRow> comparisonRows(Row row) {\n        ArrayList<ComparisonRow> rows = new ArrayList<>();\n        rows.add(new ComparisonRow("Original", hexSpaced(row.original), shortDecode(row.original)));\n        if (activeSource.base) {\n            BaseResearchProfiles.Field f = (BaseResearchProfiles.Field) row.field;\n            for (Map.Entry<String, byte[]> e : f.references.entrySet()) {\n                if (e.getValue() != null && !Arrays.equals(e.getValue(), f.original))\n                    rows.add(new ComparisonRow(e.getKey(), hexSpaced(e.getValue()), shortDecode(e.getValue())));\n            }\n        } else {\n            DLCProfiles.Field f = (DLCProfiles.Field) row.field;\n            for (String n : DLCReferenceProfiles.namesFor(activeSource.profileName)) {\n                byte[] b = DLCReferenceProfiles.get(activeSource.profileName, n, f.offset, f);\n                if (b != null && !Arrays.equals(b, f.original))\n                    rows.add(new ComparisonRow(n, hexSpaced(b), shortDecode(b)));\n            }\n        }\n        return rows;\n    }'''
+          if old not in s:
+              raise SystemExit('comparison text method not found')
+          s=s.replace(old,new)
+
+          marker='''    private void configureColumns() {\n        if (table.getColumnCount() < 1) return;\n        int[] w = {125, 360, 150};\n        for (int i = 0; i < table.getColumnCount() && i < w.length; i++)\n            table.getColumnModel().getColumn(i).setPreferredWidth(w[i]);\n        for (int i = 0; i < table.getColumnCount(); i++) sorter.setSortable(i, false);\n    }\n'''
+          addition='''    private void configureColumns() {\n        if (table.getColumnCount() < 1) return;\n        int[] w = {125, 360, 150};\n        for (int i = 0; i < table.getColumnCount() && i < w.length; i++)\n            table.getColumnModel().getColumn(i).setPreferredWidth(w[i]);\n        for (int i = 0; i < table.getColumnCount(); i++) sorter.setSortable(i, false);\n    }\n\n    private void configureComparisonColumns() {\n        if (comparisonsTable.getColumnCount() != 3) return;\n        comparisonsTable.getColumnModel().getColumn(0).setPreferredWidth(180);\n        comparisonsTable.getColumnModel().getColumn(0).setMinWidth(120);\n        comparisonsTable.getColumnModel().getColumn(1).setPreferredWidth(150);\n        comparisonsTable.getColumnModel().getColumn(1).setMinWidth(100);\n        comparisonsTable.getColumnModel().getColumn(2).setPreferredWidth(360);\n        comparisonsTable.getColumnModel().getColumn(2).setMinWidth(180);\n    }\n'''
+          if marker not in s:
+              raise SystemExit('configureColumns block not found')
+          s=s.replace(marker,addition)
+
+          insert='''    private record ComparisonRow(String source, String hex, String decoded) {}\n\n    private static final class ComparisonModel extends AbstractTableModel {\n        private final String[] columns = {"Source", "Hex", "Decoded"};\n        private ArrayList<ComparisonRow> rows = new ArrayList<>();\n\n        void setRows(ArrayList<ComparisonRow> newRows) {\n            rows = newRows == null ? new ArrayList<>() : newRows;\n            fireTableDataChanged();\n        }\n\n        public int getRowCount() { return rows.size(); }\n        public int getColumnCount() { return columns.length; }\n        public String getColumnName(int c) { return columns[c]; }\n        public Object getValueAt(int r, int c) {\n            ComparisonRow row = rows.get(r);\n            return switch (c) {\n                case 0 -> row.source();\n                case 1 -> row.hex();\n                case 2 -> row.decoded();\n                default -> "";\n            };\n        }\n    }\n\n'''
+          target='''    private final class ResearchModel extends AbstractTableModel {'''
+          if target not in s:
+              raise SystemExit('ResearchModel target not found')
+          s=s.replace(target,insert+target)
+          p.write_text(s)
+
+          p=Path('src/main/java/Launcher.java'); s=p.read_text().replace('DXMD Archive Editor Pro v0.7.8','DXMD Archive Editor Pro v0.7.9'); p.write_text(s)
+          for name in ('build.sh','build.bat'):
+              p=Path(name); s=p.read_text().replace('DXMD-Archive-Editor-Pro-v0.7.8.jar','DXMD-Archive-Editor-Pro-v0.7.9.jar'); p.write_text(s)
+
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.8', '> **Current version:** v0.7.9')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.8.jar','dist/DXMD-Archive-Editor-Pro-v0.7.9.jar')
+          anchor='## v0.7.8 compact Research Inspector list\n'
+          section='''## v0.7.9 comparison evidence alignment\n\nThe right-side **Comparison Evidence** view now uses a real Swing table instead of space-padded text. **Source**, **Hex**, and **Decoded** remain aligned under Windows DPI/font scaling, with fixed table columns and a flexible decoded-value column.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.9\n\n## Comparison Evidence alignment fix\n\n- Replaces the right-side Comparison Evidence pseudo-table with a real `JTable`.\n- Columns are now **Source**, **Hex**, and **Decoded** with stable column boundaries.\n- Fixes alignment drift caused by padded text under Windows font/DPI scaling.\n- Keeps all existing Base/DLC comparison rows and decoded values.\n- The compact left Research Inspector table from v0.7.8 remains unchanged.\n\nJava 21 or newer remains required.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Test comparison table
+        shell: bash
+        run: |
+          cat > build/V079UiSanity.java <<'JAVA'
+          import javax.swing.*;
+          import java.lang.reflect.*;
+          public class V079UiSanity {
+            public static void main(String[] args) throws Exception {
+              System.setProperty("java.awt.headless","true");
+              ResearchInspectorPanel p=new ResearchInspectorPanel();
+              Field lf=ResearchInspectorPanel.class.getDeclaredField("table");
+              lf.setAccessible(true);
+              JTable left=(JTable)lf.get(p);
+              if(left.getColumnCount()!=3) throw new RuntimeException("Left research table regressed");
+              Field rf=ResearchInspectorPanel.class.getDeclaredField("comparisonsTable");
+              rf.setAccessible(true);
+              JTable right=(JTable)rf.get(p);
+              if(right.getColumnCount()!=3) throw new RuntimeException("Expected 3 comparison columns");
+              String[] expect={"Source","Hex","Decoded"};
+              for(int i=0;i<3;i++) if(!expect[i].equals(right.getColumnName(i))) throw new RuntimeException("Comparison column "+i+" mismatch");
+              if(right.getColumnModel().getColumn(0).getPreferredWidth() < 150) throw new RuntimeException("Source column too narrow");
+              if(right.getColumnModel().getColumn(2).getPreferredWidth() < 300) throw new RuntimeException("Decoded column too narrow");
+              if(LogicalResourceCatalog.mappingCount()!=10) throw new RuntimeException("Logical mappings changed");
+              System.out.println("v0.7.9 UI sanity OK: real Source | Hex | Decoded table");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V079UiSanity.java
+          java -Djava.awt.headless=true -cp build/classes V079UiSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+
+      - name: Package preferred ZIP and checksums
+        shell: bash
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.7.9.jar'
+          HASH="$(sha256sum "$JAR" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" 'DXMD-Archive-Editor-Pro-v0.7.9.jar' > dist/DXMD-Archive-Editor-Pro-v0.7.9.jar.sha256
+          rm -rf build/release-package
+          mkdir -p build/release-package
+          cp "$JAR" dist/DXMD-Archive-Editor-Pro-v0.7.9.jar.sha256 build/release-package/
+          cat > build/release-package/VERIFY.txt <<'TXT'
+          DXMD Archive Editor Pro v0.7.9 - verification
+          Java 21 or newer required.
+
+          Windows SHA-256 verification:
+            certutil -hashfile DXMD-Archive-Editor-Pro-v0.7.9.jar SHA256
+          TXT
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.9.zip DXMD-Archive-Editor-Pro-v0.7.9.jar DXMD-Archive-Editor-Pro-v0.7.9.jar.sha256 VERIFY.txt)
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.9.jar
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.9.zip
+
+      - name: Commit source and documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main/java/ResearchInspectorPanel.java src/main/java/Launcher.java build.sh build.bat README.md RELEASE_NOTES.md
+          git commit -m "Align comparison evidence with real table columns"
+          git push
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.9
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.9.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.9.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.9.jar.sha256
+
+      - name: Create v0.7.9 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.9
+          name: DXMD Archive Editor Pro v0.7.9
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.9.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.9.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.9.jar.sha256
