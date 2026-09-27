@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.7.6  
+> **Current version:** v0.7.7  
 > **Runtime:** Java 21 or newer  
 > **Primary platform:** Windows
 
@@ -49,11 +49,17 @@ The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki 
 
 v0.7.3 fixes dark/black text that could remain on top-level tabs under Nimbus. The theme now supplies explicit Nimbus text colors for enabled, selected, focused, hover and pressed tab states, and also forces per-tab foreground/background colors at runtime. Selected tabs use white text; inactive tabs use the light application text color.
 
+## v0.7.7 DLC HeaderLib completion
+
+v0.7.7 adds the supplied DLC `pc_headerlib` set to the verified logical-resource catalog. All **350 / 350 DLC research rows** now resolve from archive offsets through their `.pc_resourcelib` to exact HeaderLib logical resources and payload-relative offsets. Combined with Base, logical-resource coverage is **2,896 / 2,896 current research rows**.
+
+Tactical research is now split into its real structures, including the Tactical pack entity, MicroAssembler entity type, and separate player/NPC preorder tranquilizer-rifle templates. The mappings are reduced to a tiny immutable runtime catalog, so the application does not scan the uploaded HeaderLib archive at startup; the existing animated Loading Archive popup remains active during normal archive preparation.
+
 ## v0.7.6 HeaderLib logical-resource structure
 
 v0.7.6 adds verified DXMD HeaderLib/BIN1 structure to the Research Inspector. The supplied `dxmd_dawn_extract.py` and pc_headerlib collection were used to map every current Base research row from flat archive offsets through the containing `.pc_resourcelib` into its exact logical resource payload. The inspector now shows logical assembly resource, HeaderLib, resource/owner IDs, flags, resource type/magic, payload length and offset within the logical resource. Candidate-boundary changes update the payload-relative offset as well.
 
-All **2,546 / 2,546 Base research rows** resolve to verified logical resources. The supplied HeaderLib collection does not contain matching records for the five DLC research resource libraries, so DLC rows intentionally continue to show their real archive/chunk/resource offsets without invented logical names.
+All **2,546 / 2,546 Base research rows** and **350 / 350 DLC research rows** now resolve to verified logical resources: **2,896 / 2,896 current research rows total**. The DLC HeaderLib set added in v0.7.7 supplies the previously missing mappings for Assault, Classic, Enforcer, Intruder, and Tactical.
 
 The animated Loading Archive popup remains active and now reports the HeaderLib logical-resource mapping stage.
 
@@ -229,7 +235,7 @@ Linux/macOS:
 The source targets Java 21 with `javac --release 21`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.7.6.jar
+dist/DXMD-Archive-Editor-Pro-v0.7.7.jar
 ```
 
 ## Credits

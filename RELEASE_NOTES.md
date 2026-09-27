@@ -1,31 +1,26 @@
-# DXMD Archive Editor Pro v0.7.6
+# DXMD Archive Editor Pro v0.7.7
 
-## HeaderLib / logical-resource research view
+## DLC HeaderLib / logical-resource completion
 
-- Adds **Logical Resource** and **Payload Offset** columns to the Research Inspector.
-- Adds a Logical Resource / HeaderLib Structure panel with:
-  - logical assembly resource path
-  - HeaderLib filename and library index
-  - resource ID
-  - owner ID
-  - flags
-  - payload-relative offset
-  - payload length
-  - resource type and header magic
-- Candidate boundary changes recalculate the logical payload-relative offset.
-- Evidence text explicitly distinguishes structural HeaderLib evidence from gameplay-semantic proof.
-- Verified against the supplied DXMD v002 HeaderLib data: **2,546 / 2,546 Base research rows map successfully**.
-- The current supplied HeaderLib set has no matching records for the five DLC research resource libraries; DLC logical-resource cells remain blank instead of being guessed.
+- Adds verified HeaderLib/BIN1 mappings from the supplied DLC `pc_headerlib` collection.
+- **Assault:** 52 / 52 research rows mapped.
+- **Classic:** 52 / 52 research rows mapped.
+- **Enforcer:** 72 / 72 research rows mapped.
+- **Intruder:** 90 / 90 research rows mapped.
+- **Tactical:** 84 / 84 research rows mapped.
+- **DLC total:** 350 / 350.
+- **Base + DLC total:** 2,896 / 2,896 current research rows.
+
+The Research Inspector now shows logical resource, HeaderLib, resource/owner IDs, flags, payload offset/length, and resource type/magic for DLC rows just as it does for Base rows.
+
+Tactical rows resolve across four useful structures: the Tactical pack entity, the MicroAssembler entity type, the preorder tranquilizer-rifle player template, and the preorder tranquilizer-rifle NPC template.
 
 ## Loading
 
-- The animated Loading Archive popup remains active.
-- First-load status now includes `Loading HeaderLib logical-resource structure...` and `Mapping research fields to logical resources...`.
-- The current verified mappings are bundled and immutable, so this adds negligible runtime cost; no 1.2 GB HeaderLib scan is performed at application startup.
+The added DLC structure is stored as eight verified payload-range records in the immutable runtime catalog, so it adds negligible startup cost and does not scan the original HeaderLib 7z. The animated Loading Archive popup remains enabled and reports the HeaderLib logical-resource stage.
 
 ## Download packaging
 
-- Preferred download remains the ZIP containing the Java 21 JAR, SHA-256 checksum file and verification instructions.
-- Direct JAR remains attached to the release.
+Preferred download remains the ZIP containing the Java 21 JAR, SHA-256 checksum file and verification instructions. The direct JAR remains attached to the release.
 
 Java 21 or newer remains required.
