@@ -1,0 +1,143 @@
+name: Release v0.7.7 DLC HeaderLib Completion
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.7.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Update v0.7.7 documentation
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('> **Current version:** v0.7.6', '> **Current version:** v0.7.7')
+          s=s.replace('dist/DXMD-Archive-Editor-Pro-v0.7.6.jar','dist/DXMD-Archive-Editor-Pro-v0.7.7.jar')
+          old='All **2,546 / 2,546 Base research rows** resolve to verified logical resources. The supplied HeaderLib collection does not contain matching records for the five DLC research resource libraries, so DLC rows intentionally continue to show their real archive/chunk/resource offsets without invented logical names.'
+          new='All **2,546 / 2,546 Base research rows** and **350 / 350 DLC research rows** now resolve to verified logical resources: **2,896 / 2,896 current research rows total**. The DLC HeaderLib set added in v0.7.7 supplies the previously missing mappings for Assault, Classic, Enforcer, Intruder, and Tactical.'
+          s=s.replace(old,new)
+          anchor='## v0.7.6 HeaderLib logical-resource structure\n'
+          section='''## v0.7.7 DLC HeaderLib completion\n\nv0.7.7 adds the supplied DLC `pc_headerlib` set to the verified logical-resource catalog. All **350 / 350 DLC research rows** now resolve from archive offsets through their `.pc_resourcelib` to exact HeaderLib logical resources and payload-relative offsets. Combined with Base, logical-resource coverage is **2,896 / 2,896 current research rows**.\n\nTactical research is now split into its real structures, including the Tactical pack entity, MicroAssembler entity type, and separate player/NPC preorder tranquilizer-rifle templates. The mappings are reduced to a tiny immutable runtime catalog, so the application does not scan the uploaded HeaderLib archive at startup; the existing animated Loading Archive popup remains active during normal archive preparation.\n\n'''
+          if section not in s: s=s.replace(anchor,section+anchor)
+          p.write_text(s)
+          Path('RELEASE_NOTES.md').write_text('''# DXMD Archive Editor Pro v0.7.7\n\n## DLC HeaderLib / logical-resource completion\n\n- Adds verified HeaderLib/BIN1 mappings from the supplied DLC `pc_headerlib` collection.\n- **Assault:** 52 / 52 research rows mapped.\n- **Classic:** 52 / 52 research rows mapped.\n- **Enforcer:** 72 / 72 research rows mapped.\n- **Intruder:** 90 / 90 research rows mapped.\n- **Tactical:** 84 / 84 research rows mapped.\n- **DLC total:** 350 / 350.\n- **Base + DLC total:** 2,896 / 2,896 current research rows.\n\nThe Research Inspector now shows logical resource, HeaderLib, resource/owner IDs, flags, payload offset/length, and resource type/magic for DLC rows just as it does for Base rows.\n\nTactical rows resolve across four useful structures: the Tactical pack entity, the MicroAssembler entity type, the preorder tranquilizer-rifle player template, and the preorder tranquilizer-rifle NPC template.\n\n## Loading\n\nThe added DLC structure is stored as eight verified payload-range records in the immutable runtime catalog, so it adds negligible startup cost and does not scan the original HeaderLib 7z. The animated Loading Archive popup remains enabled and reports the HeaderLib logical-resource stage.\n\n## Download packaging\n\nPreferred download remains the ZIP containing the Java 21 JAR, SHA-256 checksum file and verification instructions. The direct JAR remains attached to the release.\n\nJava 21 or newer remains required.\n''')
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Sanity test v0.7.7
+        shell: bash
+        run: |
+          cat > build/V077SourceSanity.java <<'JAVA'
+          public class V077SourceSanity {
+            private static void check(String lib,long off,String path,String payloadHex) {
+              var r=LogicalResourceCatalog.locate(lib,off);
+              if(r==null) throw new RuntimeException("No logical mapping for "+lib+" @ "+off);
+              if(!r.logicalPath().equals(path)) throw new RuntimeException("Wrong logical path: "+r.logicalPath());
+              String got=String.format("0x%X",r.payloadOffset(off));
+              if(!got.equals(payloadHex)) throw new RuntimeException("Wrong payload offset: "+got+" expected "+payloadHex);
+            }
+            public static void main(String[] args) throws Exception {
+              if (BaseResearchProfiles.get().fields.size()!=2546) throw new RuntimeException("Base profile count changed");
+              int dlc=0; for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              if (dlc!=350) throw new RuntimeException("DLC profile count changed: "+dlc);
+              if (LogicalResourceCatalog.libraryCount()!=8) throw new RuntimeException("Expected 8 mapped libraries, got "+LogicalResourceCatalog.libraryCount());
+              if (LogicalResourceCatalog.mappingCount()!=10) throw new RuntimeException("Expected 10 logical payload mappings, got "+LogicalResourceCatalog.mappingCount());
+
+              check("3F7F13408DC798B22EAE4EFAA3DBA7FA.pc_resourcelib",46240L,
+                "[assembly:/scenes/dlc_01/50_items1/dlc_pack_assault.entity].pc_entitytemplate","0xA60");
+              check("BBC4D5C3C785288B60CF2CE47A3A8973.pc_resourcelib",29863L,
+                "[assembly:/scenes/dlc_01/50_items1/dlc_pack_classic.entity].pc_entitytemplate","0xA38");
+              check("266C28A09FE8B55019B5D5878A9A2230.pc_resourcelib",31575696L,
+                "[assembly:/scenes/dlc_01/50_items1/dlc_pack_enforcer.entity].pc_entitytemplate","0xB50");
+              check("77A929A4687159D92C5EB5386ED29C88.pc_resourcelib",14829010L,
+                "[assembly:/scenes/dlc_01/50_items1/dlc_pack_intruder.entity].pc_entitytemplate","0xA88");
+              check("AADBB1331996C05945184BC2C0C12695.pc_resourcelib",1671L,
+                "[modules:/game.main.moduleinfo?zmicroassembleraugmentation.class].pc_entitytype","0x228");
+
+              var player=LogicalResourceCatalog.locate("49519347F788290D4AA2F5D1FD4561D2.pc_resourcelib",57141L);
+              if(player==null || !player.logicalPath().contains("core_equip_player")) throw new RuntimeException("Tactical player template missing");
+              var npc=LogicalResourceCatalog.locate("49519347F788290D4AA2F5D1FD4561D2.pc_resourcelib",21309L);
+              if(npc==null || !npc.logicalPath().contains("core_equip_npc")) throw new RuntimeException("Tactical NPC template missing");
+              if(!HalfFloat.formatLE(new byte[]{(byte)0x80,0x40}).equals("2.25")) throw new RuntimeException("Float16 regression");
+              System.out.println("v0.7.7 sanity OK: base=2546 dlc=350 logical=2896/2896");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V077SourceSanity.java
+          java -Djava.awt.headless=true -cp build/classes V077SourceSanity
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.7.jar | grep -q '^ResearchInspectorPanel.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.7.jar | grep -q '^LogicalResourceCatalog.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.7.jar | grep -q '^Launcher.class$'
+
+      - name: Package preferred ZIP and checksums
+        shell: bash
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.7.7.jar'
+          HASH="$(sha256sum "$JAR" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" 'DXMD-Archive-Editor-Pro-v0.7.7.jar' > dist/DXMD-Archive-Editor-Pro-v0.7.7.jar.sha256
+          rm -rf build/release-package
+          mkdir -p build/release-package
+          cp "$JAR" dist/DXMD-Archive-Editor-Pro-v0.7.7.jar.sha256 build/release-package/
+          cat > build/release-package/VERIFY.txt <<'TXT'
+          DXMD Archive Editor Pro v0.7.7 - verification
+
+          This release requires Java 21 or newer.
+
+          Windows SHA-256 verification:
+            certutil -hashfile DXMD-Archive-Editor-Pro-v0.7.7.jar SHA256
+
+          Compare the result with DXMD-Archive-Editor-Pro-v0.7.7.jar.sha256.
+
+          The ZIP/JAR is not Authenticode-signed. Browser/SmartScreen reputation warnings can occur for uncommon unsigned Java downloads even when the checksum is correct.
+          TXT
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.7.zip DXMD-Archive-Editor-Pro-v0.7.7.jar DXMD-Archive-Editor-Pro-v0.7.7.jar.sha256 VERIFY.txt)
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.7.jar
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.7.zip
+
+      - name: Commit documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md RELEASE_NOTES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Document v0.7.7 DLC logical-resource coverage"
+            git push
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.7
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.7.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.7.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.7.jar.sha256
+
+      - name: Create v0.7.7 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.7
+          name: DXMD Archive Editor Pro v0.7.7
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.7.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.7.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.7.jar.sha256
