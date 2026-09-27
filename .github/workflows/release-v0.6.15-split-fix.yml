@@ -1,0 +1,163 @@
+name: Release v0.6.15 split evidence fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.6.15-split-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Verify split raw evidence
+        run: |
+          cat src/main/resources/raw_archive_evidence.part01.b64 \
+              src/main/resources/raw_archive_evidence.part02.b64 \
+              src/main/resources/raw_archive_evidence.part03.b64 \
+              src/main/resources/raw_archive_evidence.part04.b64 \
+              src/main/resources/raw_archive_evidence.part05.b64 \
+              src/main/resources/raw_archive_evidence.part06.b64 \
+              src/main/resources/raw_archive_evidence.part07.b64 \
+            | base64 -d | gzip -dc > /tmp/raw_archive_evidence.tsv
+          echo 'd2868c817f647eeaa0e76ce6b257316bd55aad5ca7a097759f2a54e1b2fd51f2  /tmp/raw_archive_evidence.tsv' | sha256sum -c -
+          test "$(wc -l < /tmp/raw_archive_evidence.tsv)" -eq 7280
+
+      - name: Point catalog at split evidence
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/main/java/RawArchiveAuditCatalog.java')
+          s=p.read_text(encoding='utf-8')
+          old='try(BufferedReader br=CompressedResource.open(RawArchiveAuditCatalog.class,"/raw_archive_evidence.tsv.gz.b64")){' 
+          new='''try(BufferedReader br=CompressedResource.openParts(RawArchiveAuditCatalog.class,
+                  "/raw_archive_evidence.part01.b64",
+                  "/raw_archive_evidence.part02.b64",
+                  "/raw_archive_evidence.part03.b64",
+                  "/raw_archive_evidence.part04.b64",
+                  "/raw_archive_evidence.part05.b64",
+                  "/raw_archive_evidence.part06.b64",
+                  "/raw_archive_evidence.part07.b64")){'''
+          if old in s:
+              s=s.replace(old,new,1)
+              p.write_text(s,encoding='utf-8')
+          elif '/raw_archive_evidence.part07.b64' not in s:
+              raise SystemExit('RawArchiveAuditCatalog loader target not found')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main/java/RawArchiveAuditCatalog.java
+          if ! git diff --cached --quiet; then
+            git commit -m 'Load v0.6.15 raw audit evidence from split resources'
+            git push origin HEAD:main
+          fi
+
+      - name: Build JAR
+        run: bash build.sh
+
+      - name: Run raw-audit sanity checks
+        run: |
+          cat > build/AuditSanity.java <<'EOF'
+          public class AuditSanity {
+              public static void main(String[] args) {
+                  BaseResearchProfiles.Profile base=BaseResearchProfiles.get();
+                  int bc=0,bs=0;
+                  for(BaseResearchProfiles.Field f:base.fields){
+                      FieldConfidenceAudit.Assessment a=FieldConfidenceAudit.assessBase(f,null,"");
+                      if(a.confidence==FieldConfidenceAudit.Confidence.CONFIRMED)bc++;
+                      if(a.confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED)bs++;
+                  }
+                  int df=0,dc=0,ds=0,aC=0,cC=0,eC=0,iC=0,tC=0;
+                  for(String n:DLCProfiles.names()){
+                      DLCProfiles.Profile p=DLCProfiles.get(n); df+=p.fields.size();
+                      for(DLCProfiles.Field f:p.fields){
+                          FieldConfidenceAudit.Assessment x=FieldConfidenceAudit.assessDlc(n,f,"");
+                          if(x.confidence==FieldConfidenceAudit.Confidence.CONFIRMED){
+                              dc++;
+                              if(n.contains("Assault"))aC++; else if(n.contains("Classic"))cC++; else if(n.contains("Enforcer"))eC++; else if(n.contains("Intruder"))iC++; else if(n.contains("Tactical"))tC++;
+                          }
+                          if(x.confidence==FieldConfidenceAudit.Confidence.STRONG_SUSPECTED)ds++;
+                      }
+                  }
+                  if(base.fields.size()!=2546 || base.referenceNames.size()!=29 || bc!=233 || bs!=48)
+                      throw new RuntimeException("Base audit mismatch: rows="+base.fields.size()+" refs="+base.referenceNames.size()+" C="+bc+" SS="+bs);
+                  if(RawArchiveAuditCatalog.uniqueVariantCount()!=48 || RawArchiveAuditCatalog.rawRunCount()!=7222)
+                      throw new RuntimeException("Raw evidence mismatch: variants="+RawArchiveAuditCatalog.uniqueVariantCount()+" runs="+RawArchiveAuditCatalog.rawRunCount());
+                  if(df!=350 || dc!=11 || ds!=48 || aC!=2 || cC!=1 || eC!=2 || iC!=1 || tC!=5)
+                      throw new RuntimeException("DLC audit mismatch: rows="+df+" C="+dc+" SS="+ds+" packs="+aC+","+cC+","+eC+","+iC+","+tC);
+
+                  BaseResearchProfiles.Field reticle=null;
+                  for(BaseResearchProfiles.Field f:base.fields) if(f.offset==4887605L) reticle=f;
+                  FieldConfidenceAudit.Assessment ra=FieldConfidenceAudit.assessBase(reticle,null,"");
+                  if(ra.confidence!=FieldConfidenceAudit.Confidence.CONFIRMED || !ra.name.contains("Standard-Reticle"))
+                      throw new RuntimeException("Reticle/silencer correction missing");
+
+                  DLCProfiles.Field battle=null;
+                  for(DLCProfiles.Field f:DLCProfiles.get("DLCPackAssault.layer.0.all.archive").fields) if(f.offset==54331L) battle=f;
+                  if(battle==null || !FieldConfidenceAudit.isDlcConfirmed("DLCPackAssault.layer.0.all.archive",battle))
+                      throw new RuntimeException("Elite Battle Rifle width not confirmed");
+
+                  DLCProfiles.Field micro=null;
+                  for(DLCProfiles.Field f:DLCProfiles.get("DLCPackTactical.layer.0.all.archive").fields) if(f.offset==112348L) micro=f;
+                  if(micro==null || !FieldConfidenceAudit.isDlcConfirmed("DLCPackTactical.layer.0.all.archive",micro))
+                      throw new RuntimeException("Micro-Assembler gate not confirmed");
+
+                  DLCProfiles.Field sup=null;
+                  for(DLCProfiles.Field f:DLCProfiles.get("DLCPackEnforcer.layer.0.all.archive").fields) if(f.offset==31593120L) sup=f;
+                  if(sup==null || FieldConfidenceAudit.assessDlc("DLCPackEnforcer.layer.0.all.archive",sup,"").confidence!=FieldConfidenceAudit.Confidence.STRONG_SUSPECTED)
+                      throw new RuntimeException("Suppressor component confidence regressed");
+
+                  System.out.println("Raw audit OK: Base="+base.fields.size()+" C="+bc+" SS="+bs+", variants="+RawArchiveAuditCatalog.uniqueVariantCount()+" runs="+RawArchiveAuditCatalog.rawRunCount()+", DLC="+df+" C="+dc+" SS="+ds);
+              }
+          }
+          EOF
+          javac --release 11 -cp build/classes -d build/classes build/AuditSanity.java
+          java -cp build/classes AuditSanity
+          rm -f build/classes/AuditSanity.class build/AuditSanity.java
+
+      - name: Smoke-check JAR contents
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.6.15.jar'
+          test -s "$JAR"
+          jar tf "$JAR" | grep -q '^Launcher.class$'
+          jar tf "$JAR" | grep -q '^FieldConfidenceAudit.class$'
+          jar tf "$JAR" | grep -q '^RawArchiveAuditCatalog.class$'
+          jar tf "$JAR" | grep -q '^raw_archive_evidence.part01.b64$'
+          jar tf "$JAR" | grep -q '^raw_archive_evidence.part07.b64$'
+          jar tf "$JAR" | grep -q '^dlc_profiles.tsv.gz.b64$'
+          jar tf "$JAR" | grep -q '^base_research_v069_patch.tsv.gz.b64$'
+          sha256sum "$JAR"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.6.15
+          path: dist/DXMD-Archive-Editor-Pro-v0.6.15.jar
+          if-no-files-found: error
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG='v0.6.15'
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.6.15.jar'
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title 'DXMD Archive Editor Pro v0.6.15' --notes-file RELEASE_NOTES.md
+            gh release upload "$TAG" "$JAR" --clobber
+          else
+            gh release create "$TAG" "$JAR" --target main --title 'DXMD Archive Editor Pro v0.6.15' --notes-file RELEASE_NOTES.md
+          fi
