@@ -161,7 +161,7 @@ final class UiTheme {
             separator.setForeground(BORDER);
             separator.setBackground(BORDER);
         }
-        recolorBorder(c);
+        if (c instanceof JComponent jc) recolorBorder(jc);
     }
 
     private static void recolorBorder(JComponent c) {
