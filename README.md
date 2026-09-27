@@ -2,13 +2,13 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.6.14  
+> **Current version:** v0.6.15  
 > **Runtime:** Java 11 or newer  
 > **Primary platform:** Windows
 
 The project does **not** redistribute Deus Ex game archives.
 
-See **[FIELD_AUDIT_v0.6.14.md](FIELD_AUDIT_v0.6.14.md)** for the current confirmed/suspected field-confidence methodology and evidence baseline.
+See **[FIELD_AUDIT_v0.6.15.md](FIELD_AUDIT_v0.6.15.md)** for the current raw-archive evidence baseline. The v0.6.14 audit remains available as the previous baseline.
 
 ## Supported archives
 
@@ -30,7 +30,7 @@ DLC/runtime/DLCPackTactical.layer.0.all.archive
 
 Select `DXMD.exe` and the editor resolves the expected base/DLC structure automatically. Startup detection only walks upward through the application path and validates the DXMD directory layout; it does not scan arbitrary nearby folders.
 
-## v0.6.14 tab layout
+## Current tab layout
 
 Confirmed base-game editing is organized by purpose instead of one large Base Game tab:
 
@@ -73,7 +73,7 @@ DXMD-specific wiki information is treated as strong high-level evidence and is c
 
 ## Base Fields
 
-**Base Fields** contains confirmed mappings plus thousands of research candidates generated from clean/modded archive comparisons. It currently carries **2,553 field records** across **12 comparison profiles**.
+**Base Fields** contains confirmed mappings plus thousands of research candidates generated from clean/modded archive comparisons. It currently carries **2,546 non-overlapping field records** and **29 comparison references** after integrating the complete raw archive audit.
 
 The table includes:
 
@@ -102,6 +102,12 @@ The v0.6.9 decoded XP/reward overlay remains active in Base Fields. v0.6.12 rest
 
 Comparison profiles currently include Hardcore Revival Normal/Optional, Adam 2.0, Adam 3.0, Tweaks, Master Inventory, No Health Regen variants, More Energy Regeneration Half/Full and Inventory Stacking.
 
+## v0.6.15 raw-archive audit
+
+v0.6.15 compares the complete supplied clean/original archive set directly with every supplied modded archive. The derived evidence covers 84 archive files, 78 physical modded-vs-original comparisons, 48 SHA-256-deduplicated supplied variants and 7,222 changed byte-runs.
+
+Current audited totals are **2,546 Base rows / 233 confirmed / 48 strong-suspected** and **350 DLC rows / 11 confirmed / 48 strong-suspected**. A key correction is that `4D C7 1C 10` is a sniper/standard-reticle-related function rather than the silencer ID; Silence To The Guns replaces it with `26 AC CD 27`, the built-in silencer function. See **[FIELD_AUDIT_v0.6.15.md](FIELD_AUDIT_v0.6.15.md)** for the evidence and promotion rules.
+
 ## v0.6.14 field-confidence audit
 
 v0.6.14 audits the meaning of **Known / confirmed** across both Base Fields and DLC Fields. Generated labels such as `DAMAGE_01`, `ACCURACY_01`, `RATE_OF_FIRE_02`, `RECOIL_01`, and numbered variants are structural research hints, not proof that every nearby byte is that exact stat.
@@ -114,7 +120,7 @@ v0.6.14 audits the meaning of **Known / confirmed** across both Base Fields and 
 - Evidence for each assessment is available as a table-cell tooltip. Strong-suspected rows use a separate visual state from confirmed green rows.
 - **Restore Editor Fields to Original** now follows the same strict confidence policy. DLC research/suspected rows are not silently rewritten by selective restore; use the exact `.bak` restore to undo experimental research edits.
 
-### v0.6.14 confidence counts
+### v0.6.14 confidence counts (historical baseline)
 
 The static evidence audit contains **2,553 Base research rows** and **342 DLC research rows**. Base has **217 confirmed mappings** (primarily established XP, economy, inventory and player controls) and **23 strong-suspected weapon-upgrade cost candidates**. Only **2 Base weapon-stat rows** are confirmed as direct weapon stats: the Tranquilizer Rifle and Lancer Rifle magazine capacities.
 
@@ -179,7 +185,7 @@ Linux/macOS:
 The source targets Java 11 with `javac --release 11`. The resulting JAR is written to:
 
 ```text
-dist/DXMD-Archive-Editor-Pro-v0.6.14.jar
+dist/DXMD-Archive-Editor-Pro-v0.6.15.jar
 ```
 
 ## Credits

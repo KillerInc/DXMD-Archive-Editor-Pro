@@ -79,7 +79,7 @@ final class RawArchiveAuditCatalog {
 
     private static void installMappings(){
         final String BASE="Game.layer.1.all.archive";
-        add(BASE,7413173L,"22C6ABC4",Level.CONFIRMED,"Takedown Power Consumption Override",
+        add(BASE,7413173L,"22C6ABC4",Level.CONFIRMED,"Takedown Power Consumption Control",
                 "Icarus Reflexes changes exactly this 4-byte field to 00000000 and documents removal of takedown power consumption.",false);
         add(BASE,6577693L,"00000C42",Level.CONFIRMED,"Energy Auto-Regeneration Limit",
                 "Two isolated regeneration mods change this float from 35.0 to 100.0 / 193.0. IPOAO Full differs from normal IPOAO only at this same field.",false);
@@ -187,8 +187,8 @@ final class RawArchiveAuditCatalog {
     }
 
     private static void silencerFunction(String archive,long offset,String weapon){
-        add(archive,offset,"4DC71C10",Level.CONFIRMED,weapon+" Built-in Silencer Function ID",
-                "Silence To The Guns replaces 4DC71C10 with 26ACCD27; its guide identifies that replacement as redirecting the weapon to the built-in silencer function.",false);
+        add(archive,offset,"4DC71C10",Level.CONFIRMED,weapon+" Standard-Reticle Function Slot / Silencer Override",
+                "Silence To The Guns documents 4DC71C10 as a sniper/standard-reticle-related function and replaces it with 26ACCD27, the built-in silencer function ID. The field is therefore a function slot used by the mod for a silencer override; 4DC71C10 itself is not a silencer ID.",false);
     }
     private static void dlcSilencerFunction(String archive,long offset,String weapon){ silencerFunction(archive,offset,weapon); }
 

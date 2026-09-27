@@ -29,7 +29,10 @@ final class FieldConfidenceAudit {
     private FieldConfidenceAudit() {}
 
     static boolean isBaseConfirmed(BaseResearchProfiles.Field f) {
-        if (f==null || f.category==null || !f.category.startsWith("KNOWN")) return false;
+        if (f==null) return false;
+        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);
+        if (raw!=null) return raw.level==RawArchiveAuditCatalog.Level.CONFIRMED;
+        if (f.category==null || !f.category.startsWith("KNOWN")) return false;
         // Generated weapon-family labels are never proof by themselves. The only
         // currently confirmed base weapon-stat rows are isolated magazine mappings.
         if (weaponFamily(f.label)!=null) {
@@ -40,6 +43,8 @@ final class FieldConfidenceAudit {
 
     static Assessment assessBase(BaseResearchProfiles.Field f, String nearbySpecific, String nearbyContext) {
         if (f==null) return unidentified();
+        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);
+        if (raw!=null) return rawAssessment(raw);
         if (isBaseConfirmed(f)) {
             String name=f.label;
             if (f.label!=null && f.label.startsWith("Ammo Stack") && nearbySpecific!=null && !nearbySpecific.trim().isEmpty())
@@ -78,6 +83,9 @@ final class FieldConfidenceAudit {
     }
 
     static boolean isBaseSaveRisk(BaseResearchProfiles.Field f) {
+        if (f==null) return false;
+        RawArchiveAuditCatalog.Mapping raw=rawBaseMapping(f);
+        if (raw!=null) return raw.saveRisk;
         if (!isBaseConfirmed(f)) return false;
         String l=f.label==null?"":f.label.toUpperCase(Locale.ROOT);
         return l.contains(" WIDTH") || l.contains(" HEIGHT") || l.contains("INVENTORY SIZE");
@@ -85,6 +93,8 @@ final class FieldConfidenceAudit {
 
     static boolean isDlcConfirmed(String profileName, DLCProfiles.Field f) {
         if (f==null) return false;
+        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);
+        if (raw!=null) return raw.level==RawArchiveAuditCatalog.Level.CONFIRMED;
         String p=shortProfile(profileName);
         long o=f.offset;
         return (p.equals("Enforcer") && o==31578472L) ||
@@ -93,6 +103,8 @@ final class FieldConfidenceAudit {
 
     static boolean isDlcSaveRisk(String profileName, DLCProfiles.Field f) {
         if (f==null) return false;
+        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);
+        if (raw!=null) return raw.saveRisk;
         long o=f.offset;
         String p=shortProfile(profileName);
         if ((p.equals("Enforcer") && o==31578472L) || (p.equals("Tactical") && o==106868L) || (p.equals("Assault") && o==54331L)) return true;
@@ -102,6 +114,8 @@ final class FieldConfidenceAudit {
 
     static Assessment assessDlc(String profileName, DLCProfiles.Field f, String nearbyContext) {
         if (f==null) return unidentified();
+        RawArchiveAuditCatalog.Mapping raw=rawDlcMapping(profileName,f);
+        if (raw!=null) return rawAssessment(raw);
         String p=shortProfile(profileName);
         long o=f.offset;
 
@@ -326,6 +340,25 @@ final class FieldConfidenceAudit {
             else { out.append(cap?Character.toUpperCase(c):Character.toLowerCase(c)); cap=false; }
         }
         return out.toString();
+    }
+
+    private static RawArchiveAuditCatalog.Mapping rawBaseMapping(BaseResearchProfiles.Field f) {
+        if (f==null || f.original==null) return null;
+        return RawArchiveAuditCatalog.mapping("Game.layer.1.all.archive",f.offset,f.original.length);
+    }
+
+    private static RawArchiveAuditCatalog.Mapping rawDlcMapping(String profileName,DLCProfiles.Field f) {
+        if (f==null || f.original==null || profileName==null) return null;
+        return RawArchiveAuditCatalog.mapping(profileName,f.offset,f.original.length);
+    }
+
+    private static Assessment rawAssessment(RawArchiveAuditCatalog.Mapping raw) {
+        Confidence confidence;
+        if (raw.level==RawArchiveAuditCatalog.Level.CONFIRMED) confidence=Confidence.CONFIRMED;
+        else if (raw.level==RawArchiveAuditCatalog.Level.STRONG_SUSPECTED) confidence=Confidence.STRONG_SUSPECTED;
+        else confidence=Confidence.SUSPECTED;
+        String evidence=raw.evidence+" "+RawArchiveAuditCatalog.evidenceSummary(raw.archive,raw.offset,raw.length());
+        return new Assessment(confidence,raw.name,evidence,raw.saveRisk);
     }
 
     private static Assessment unidentified() {
