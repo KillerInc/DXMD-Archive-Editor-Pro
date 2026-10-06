@@ -31,8 +31,53 @@ public final class BaseOptionCatalog {
 
     public static ArrayList<Option> weaponStats() {
         ArrayList<Option> out = new ArrayList<Option>();
-        out.add(new ByteOption(a(4937661), "Tranquilizer Rifle Magazine", "Sets the base Tranquilizer Rifle magazine capacity. Clean game value is 6. Range:0-255", 6));
-        out.add(new ByteOption(a(4981373), "Lancer Rifle Magazine", "Sets the base Lancer Rifle magazine capacity. Clean game value is 3. Range:0-255", 3));
+        addMagazine(out,"Combat Rifle",4887549,30);
+        addMagazine(out,"Tranquilizer Rifle",4937661,6);
+        addMagazine(out,"Machine Pistol",4941349,30);
+        addMagazine(out,"10mm Pistol",4948853,15);
+        addMagazine(out,"Battle Rifle",4952925,10);
+        addMagazine(out,"Stun Pistol",4956797,5);
+        addMagazine(out,"Grenade Launcher",4968165,6);
+        addMagazine(out,"Revolver",4971045,6);
+        addMagazine(out,"Cote d'Azur Rifle",4974701,60);
+        addMagazine(out,"Heavy Rifle",4977557,30);
+        addMagazine(out,"Lancer Rifle",4981373,3);
+        addMagazine(out,"Otar Revolver",4984933,5);
+        addMagazine(out,"Devastator Shotgun",4988325,32);
+        addMagazine(out,"Tactical Shotgun",6755645,6);
+        addMagazine(out,"Sniper Rifle",6785837,5);
+
+        addRange(out,"Combat Rifle",4887669,60.0f);
+        addRange(out,"Tranquilizer Rifle",4937781,55.0f);
+        addRange(out,"Machine Pistol",4941469,45.0f);
+        addRange(out,"10mm Pistol",4949093,55.0f);
+        addRange(out,"Battle Rifle",4953021,80.0f);
+        addRange(out,"Stun Pistol",4957109,8.0f);
+        addRange(out,"Grenade Launcher",4968285,55.0f);
+        addRange(out,"Revolver",4971141,55.0f);
+        addRange(out,"Cote d'Azur Rifle",4974821,40.0f);
+        addRange(out,"Heavy Rifle",4977725,100.0f);
+        addRange(out,"Lancer Rifle",4981493,300.0f);
+        addRange(out,"Otar Revolver",4985029,65.0f);
+        addRange(out,"Devastator Shotgun",4988421,35.0f);
+        addRange(out,"Tactical Shotgun",6755765,25.0f);
+        addRange(out,"Sniper Rifle",6785933,175.0f);
+
+        addReload(out,"Combat Rifle",4887813,3.0f);
+        addReload(out,"Tranquilizer Rifle",4937925,5.0f);
+        addReload(out,"Machine Pistol",4941613,2.8f);
+        addReload(out,"10mm Pistol",4949237,2.6f);
+        addReload(out,"Battle Rifle",4953165,3.1f);
+        addReload(out,"Stun Pistol",4957253,2.5f);
+        addReload(out,"Grenade Launcher",4968429,4.6f);
+        addReload(out,"Revolver",4971285,3.0f);
+        addReload(out,"Cote d'Azur Rifle",4974965,3.0f);
+        addReload(out,"Heavy Rifle",4977797,4.0f);
+        addReload(out,"Lancer Rifle",4981637,3.3f);
+        addReload(out,"Otar Revolver",4985173,3.3f);
+        addReload(out,"Devastator Shotgun",4988565,3.2f);
+        addReload(out,"Tactical Shotgun",6755909,3.2f);
+        addReload(out,"Sniper Rifle",6786077,5.0f);
         out.add(new ShortOption(a(4264429, 4265549, 4267085, 4268245, 4269245, 4270501, 4285101, 4286237, 4287013, 4288053, 4288885, 4290013, 6615853, 6616941, 6966957, 7525853),
                 "Weapon Ammo Stack", "Sets the max inventory stack size of standard weapon ammunition (grenade-launcher ammo excluded). Range:0-65535", 200));
         out.add(new ShortOption(a(4282117, 4282861, 4283605, 4284349),
@@ -180,6 +225,23 @@ public final class BaseOptionCatalog {
         addXP(out, "Void Warranty", "Destroy a flying drone; internal combat_disable_drone.", 20, 5406877);
         addXP(out, "Junk Yard", "Destroy a walker/sentry robot; internal combat_disable_sentry.", 40, 5401845);
         return out;
+    }
+
+    private static void addMagazine(ArrayList<Option> out,String weapon,long offset,int clean) {
+        out.add(new ByteOption(a(offset), weapon+" Magazine",
+                "Sets the base magazine capacity identified by verified 79D898E8 record structure. Clean game value is "+clean+". Range:0-255", clean));
+    }
+
+    private static void addRange(ArrayList<Option> out,String weapon,long offset,float clean) {
+        out.add(new FloatOption(a(offset), weapon+" Range",
+                "Sets the functional weapon-range Float32 identified by verified A1B89DD4 record structure. Clean game value is "+clean+". Range:0-1000",
+                clean,0.0f,1000.0f));
+    }
+
+    private static void addReload(ArrayList<Option> out,String weapon,long offset,float clean) {
+        out.add(new FloatOption(a(offset), weapon+" Reload Timing",
+                "Sets the base reload timing Float32 identified by verified 5F317320 record structure. Clean game value is "+clean+". Range:0-60",
+                clean,0.0f,60.0f));
     }
 
     private static void addXP(ArrayList<Option> out, String name, String desc, int defaultValue, long... offsets) {
