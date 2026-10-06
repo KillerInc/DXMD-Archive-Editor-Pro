@@ -929,3 +929,45 @@ A Java 21 regression test constructs a synthetic magazine-capacity record using 
 79D898E8 and verifies that:
 - a row on marker+16 is detected as overlapping the verified value;
 - an unrelated nearby row is not falsely reported as overlapping.
+
+
+======================================================================
+30. HARDCORE REVIVAL COMMENTS - CONTINUOUS AUG ENERGY DRAIN
+======================================================================
+Source:
+https://www.moddb.com/mods/deus-ex-mankind-divided-hardcore-revival
+
+Grognougnou explicitly explains how 292E5FAE is used when locating augmentation
+energy-drain behavior:
+- search for 29 2E 5F AE;
+- in applicable augmentation paragraphs, nearby 02 / 01 state data appears before it;
+- 01 means the augmentation drains energy continuously while active;
+- changing that 01 to 00 disables that continuous drain for that augmentation stage.
+
+The same discussion clarifies an important structural point for multi-stage augmentations:
+Cloaking has Base, Upgrade 1 and Upgrade 2 paragraphs, so all three stages must be edited if
+the user wants continuous energy drain disabled at every upgrade level.
+
+This strengthens the existing 292E5FAE mapping while also confirming that the editable
+drain flag is contextually associated with, but not simply identical to, the marker itself.
+Because the published comment does not give one fixed byte distance for the flag, the
+runtime scanner keeps this marker proximity-only rather than inventing a value offset.
+
+======================================================================
+31. HARDCORE REVIVAL VIDEO INDEX - BEHAVIOR VERIFICATION
+======================================================================
+Source:
+https://www.nexusmods.com/deusexmankinddivided/mods/6?tab=videos
+
+The public Nexus video index exposes Grognougnou's own demonstrations of several changes
+used by the written research, including:
+- Cote d'Azur Combat Rifle power / reload / recoil changes.
+- Weapon base damage, default ammo capacity and range changes.
+- Consumable-item changes.
+- Shortened blurred-vision duration.
+- Experimental-augmentation overheating / instability changes.
+- Later AI and resistance/immunity changes.
+
+The available indexed YouTube pages do not expose hex-edit frames or transcripts containing
+additional byte mappings, so these videos are useful behavioral corroboration but did not
+produce a new exact "hex = stat" mapping in this pass.
