@@ -85,10 +85,19 @@ final class RawArchiveAuditCatalog {
                 "I Need The Edge v1.1 changes all four documented Grenade Launcher ammunition inventory heights from 2 to 1.",true);
 
         long[] controlledStackOff={4909661L,4920789L,4924701L,4927085L,4930765L,4932517L,4934509L,5050405L,5051309L,5052261L,5053221L,5054125L,5055117L,5709845L,5757237L,5757845L,5758453L,5851957L,5852685L,5853501L,5864469L,5866069L,5866765L,5867429L,6617717L,7559005L};
-        String[] controlledStackOrig={"01","01","01","01","01","01","01","0A00","1E00","2000","2800","6400","3200","0C","0C","0C","0C","08","08","08","01","01","01","01","0A00","03"};
+        String[] controlledStackOrig={"19","19","19","19","19","19","19","C800","C800","C800","C800","C800","C800","19","19","19","19","64","19","19","19","19","19","19","C800","19"};
+        String[] controlledStackName={
+                "Absinthe Tensons Sense Stack","Goldtooth Whiskey Stack","Lavende de Machiniste Wine Stack",
+                "Akuma Shochu Stack","Surly Welshmans Whiskey Stack","Old Mans Prestige Spirits Stack","Nyes Rye Whiskey Stack",
+                "EMP Ammo Stack - Unresolved Caliber A","10mm EMP Ammo Stack","12 Gauge EMP Ammo Stack","5.56mm EMP Ammo Stack",
+                "9mm EMP Ammo Stack","EMP Ammo Stack - Unresolved Caliber B",
+                "Grenade Launcher Frag Payload Stack","Grenade Launcher EMP Payload Stack","Grenade Launcher Gas Payload Stack",
+                "Grenade Launcher Concussion Payload Stack","PEPS Ammo Stack","TESLA Ammo Stack","Nanoblade Ammo Stack",
+                "Neuropozyne Stack","Gyroscopic Regulator Stack","Hydraulic Micropump Stack","Stem Processor Chip Stack",
+                "Revolver EMP Ammo Stack","Typhoon Ammo Stack"};
         for(int i=0;i<controlledStackOff.length;i++) add(BASE,controlledStackOff[i],controlledStackOrig[i],Level.CONFIRMED,
-                "Inventory Stack Amount ["+(i+1)+"/26]",
-                "Hardcore Revival 1.024 Normal vs Optional is a controlled comparison: the author states Optional is identical except ammunition stacks become 500 and items become 50. All five DLC archives are byte-identical; this Base offset is one of exactly 60 changed stack runs and lands at +16 from a repeated verified stack record marker.",false);
+                controlledStackName[i],
+                "Hardcore Revival 1.024 Normal vs Optional is a controlled comparison: the author states Optional is identical except ammunition stacks become 500 and items become 50. All five DLC archives are byte-identical; this Base offset is one of exactly 60 changed stack runs and lands at +16 from a verified stack record marker. Clean OG bytes and the nearby archive identifier establish this row's original value and item identity.",false);
 
         long[] aug={6611045L,7589029L,7589797L,7704685L,7718621L,7719573L,7721117L,7722581L,7723565L,7727101L};
         for(int i=0;i<aug.length;i++) add(BASE,aug[i],"0ACC4075",Level.CONFIRMED,"Experimental Augmentation Gate ["+(i+1)+"/10]",
