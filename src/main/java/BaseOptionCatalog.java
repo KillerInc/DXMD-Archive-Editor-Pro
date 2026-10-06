@@ -36,7 +36,14 @@ public final class BaseOptionCatalog {
         out.add(new ShortOption(a(4264429, 4265549, 4267085, 4268245, 4269245, 4270501, 4285101, 4286237, 4287013, 4288053, 4288885, 4290013, 6615853, 6616941, 6966957, 7525853),
                 "Weapon Ammo Stack", "Sets the max inventory stack size of standard weapon ammunition (grenade-launcher ammo excluded). Range:0-65535", 200));
         out.add(new ShortOption(a(4282117, 4282861, 4283605, 4284349),
-                "Grenade Launcher Ammo Stack", "Sets the max inventory stack size of the four grenade-launcher ammunition types. Range:0-65535", 10));
+                "Grenade Launcher Ammo Stack", "Sets the max inventory stack size of the four 40mm grenade-launcher ammunition types. Range:0-65535", 10));
+        out.add(new ShortOption(a(5709845, 5757237, 5757845, 5758453),
+                "Grenade Launcher Payload Stack", "Sets the max stack size of the internal Frag/EMP/Gas/Concussion grenade-launcher payload items. Clean game value is 25. Range:0-65535", 25));
+        out.add(new ShortOption(a(5050405, 5051309, 5052261, 5053221, 5054125, 5055117, 6617717),
+                "EMP Ammo Stack", "Sets the max stack size of the seven mapped EMP-ammunition records. Two calibers remain unnamed internally, but all seven are isolated by the Hardcore 1.024 stack-only comparison. Clean game value is 200. Range:0-65535", 200));
+        out.add(new ShortOption(a(5851957), "PEPS Ammo Stack", "Sets the max inventory stack size of PEPS ammunition. Clean game value is 100. Range:0-65535", 100));
+        out.add(new ShortOption(a(5852685, 5853501, 7559005),
+                "Augmentation Ammo Stack", "Sets the max inventory stack size of TESLA, Nanoblade and Typhoon ammunition. Clean game value is 25. Range:0-65535", 25));
         return out;
     }
 
@@ -74,6 +81,11 @@ public final class BaseOptionCatalog {
         out.add(new ShortOption(a(4570277), "Biocell Stack", "Sets the max inventory stack size of Biocells. Range:0-65535", 25));
         out.add(new ShortOption(a(4912973), "Painkiller Stack", "Sets the max inventory stack size of painkillers. Range:0-65535", 25));
         out.add(new ShortOption(a(5796213), "Hypostim Stack", "Sets the max inventory stack size of Hypostims. Range:0-65535", 25));
+        out.add(new ShortOption(a(4909661, 4920789, 4924701, 4927085, 4930765, 4932517, 4934509),
+                "Alcohol Stack", "Sets the max inventory stack size of the seven mapped alcoholic-drink records. Clean game value is 25. Range:0-65535", 25));
+        out.add(new ShortOption(a(5864469), "Neuropozyne Stack", "Sets the max inventory stack size of Neuropozyne. Clean game value is 25. Range:0-65535", 25));
+        out.add(new ShortOption(a(5866069, 5866765, 5867429),
+                "Crafting Component Stack", "Sets the max inventory stack size of Gyroscopic Regulators, Hydraulic Micropumps and Stem Processor Chips. Clean game value is 25. Range:0-65535", 25));
         out.add(new ShortOption(a(5865197), "Weapon Parts Stack", "Sets the max inventory stack size of Weapon Parts. Clean game value is 999. Range:0-65535", 999));
         return out;
     }
