@@ -19,8 +19,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p build/hardcore-diff/normal build/hardcore-diff/optional
-          curl -fL --retry 3 -A 'Mozilla/5.0'             'https://www.moddb.com/downloads/start/143725'             -o build/hardcore-diff/normal.7z
-          curl -fL --retry 3 -A 'Mozilla/5.0'             'https://www.moddb.com/downloads/start/216491'             -o build/hardcore-diff/optional.7z
+          curl -fL --retry 3 -A 'Mozilla/5.0'             'https://www.moddb.com/downloads/mirror/143725/136/4388cbca249b9e04138cab79b1e7b6d2'             -o build/hardcore-diff/normal.7z
+          curl -fL --retry 3 -A 'Mozilla/5.0'             'https://www.moddb.com/downloads/mirror/216491/135/ae158d0371a38ff93ca9d9b5962344dd'             -o build/hardcore-diff/optional.7z
           ls -lh build/hardcore-diff/*.7z
 
       - name: Extract packages
