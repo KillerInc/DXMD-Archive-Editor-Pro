@@ -1108,3 +1108,30 @@ The public index gives useful behavior-level values:
 
 The public index does not expose frame-level hex data or usable transcripts containing the
 underlying markers, so no new byte-level mapping is promoted from these videos yet.
+
+
+======================================================================
+36. LIGHTPOWER1 NEXUS COMMENTS - KNOWN-BAD AMMO WIDTH OFFSETS
+======================================================================
+Source:
+https://www.nexusmods.com/deusexmankinddivided/mods/18?tab=posts&topic_id=11311498
+
+A 2025 user extracted the original editor source from the JAR and experimented with adding
+ammo-width controls. The poster explicitly states that the following guessed offsets are
+INCORRECT and do not modify the intended ammo width:
+
+- 5694417 : guessed Tranquilizer Dart ammo-box width
+- 7646673 : guessed 10mm Regular ammo-box width
+- 7647561 : guessed 10mm EMP ammo-box width
+
+The attempted code used InventoryXOption and the expected clean value 2, but the poster
+confirmed the editor patched those positions correctly while the game value being targeted
+was wrong. The user suspected a more generic/shared ammo-size configuration.
+
+These offsets must therefore never be promoted or imported as valid mappings without new
+independent proof. They are recorded here specifically as known-bad research leads.
+
+The same comment thread confirms:
+- the original LightPower1 source is embedded in the JAR and can be extracted as ZIP content;
+- Epic installations may use Game.layer.0.all.archive instead of Steam's Game.layer.1,
+  causing the old editor's absolute Steam offsets to read incorrect values.
