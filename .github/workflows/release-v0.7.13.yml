@@ -1,0 +1,157 @@
+name: Release v0.7.13 Controlled Research
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.13.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Java 21 lint
+        shell: bash
+        run: |
+          rm -rf build/lint
+          mkdir -p build/lint
+          find src/main/java -name '*.java' -print0 | xargs -0 javac --release 21 -encoding UTF-8 -Xlint:all -d build/lint
+
+      - name: Run v0.7.13 regressions
+        shell: bash
+        run: |
+          cat > build/V0713Audit.java <<'JAVA'
+          import java.nio.file.*;
+          import java.util.*;
+          import options.Option;
+
+          public class V0713Audit {
+            static void check(boolean v,String m){ if(!v) throw new RuntimeException(m); }
+
+            static Option named(List<Option> opts,String name){
+              for(Option o:opts) if(name.equals(o.getOptionName())) return o;
+              throw new RuntimeException("Missing option: "+name);
+            }
+
+            public static void main(String[] args) throws Exception {
+              check(BaseResearchProfiles.get().fields.size()==2546,"Base row count");
+              int dlc=0;
+              for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              check(dlc==350,"DLC row count");
+
+              Map<Long,String> expectedOrig=new LinkedHashMap<>();
+              expectedOrig.put(4909661L,"19");
+              expectedOrig.put(4920789L,"19");
+              expectedOrig.put(4924701L,"19");
+              expectedOrig.put(4927085L,"19");
+              expectedOrig.put(4930765L,"19");
+              expectedOrig.put(4932517L,"19");
+              expectedOrig.put(4934509L,"19");
+              expectedOrig.put(5050405L,"C800");
+              expectedOrig.put(5051309L,"C800");
+              expectedOrig.put(5052261L,"C800");
+              expectedOrig.put(5053221L,"C800");
+              expectedOrig.put(5054125L,"C800");
+              expectedOrig.put(5055117L,"C800");
+              expectedOrig.put(5709845L,"19");
+              expectedOrig.put(5757237L,"19");
+              expectedOrig.put(5757845L,"19");
+              expectedOrig.put(5758453L,"19");
+              expectedOrig.put(5851957L,"64");
+              expectedOrig.put(5852685L,"19");
+              expectedOrig.put(5853501L,"19");
+              expectedOrig.put(5864469L,"19");
+              expectedOrig.put(5866069L,"19");
+              expectedOrig.put(5866765L,"19");
+              expectedOrig.put(5867429L,"19");
+              expectedOrig.put(6617717L,"C800");
+              expectedOrig.put(7559005L,"19");
+
+              Map<Long,RawArchiveAuditCatalog.Mapping> map=new HashMap<>();
+              for(var m:RawArchiveAuditCatalog.mappingsFor("Game.layer.1.all.archive")) map.put(m.offset,m);
+              for(var e:expectedOrig.entrySet()){
+                var m=map.get(e.getKey());
+                check(m!=null,"Missing mapping "+e.getKey());
+                check(m.level==RawArchiveAuditCatalog.Level.CONFIRMED,"Not confirmed "+e.getKey());
+                check(e.getValue().equals(m.originalHex),"Wrong clean original "+e.getKey()+" got "+m.originalHex);
+                check(!m.name.startsWith("Inventory Stack Amount ["),"Generic stack label remained "+e.getKey());
+              }
+
+              var weapons=BaseOptionCatalog.weaponStats();
+              check(named(weapons,"Combat Rifle Magazine").getAddresses().contains(4887549L),"Combat magazine");
+              check(named(weapons,"Sniper Rifle Range").getAddresses().contains(6785933L),"Sniper range");
+              check(named(weapons,"Lancer Rifle Reload Timing").getAddresses().contains(4981637L),"Lancer reload");
+              check(named(weapons,"EMP Ammo Stack").getAddresses().size()==7,"EMP stack group");
+              check(named(weapons,"Grenade Launcher Payload Stack").getAddresses().size()==4,"GL payload stack");
+              check(named(weapons,"Augmentation Ammo Stack").getAddresses().size()==3,"Aug ammo stack");
+
+              var inventory=BaseOptionCatalog.inventoryStats();
+              check(named(inventory,"Alcohol Stack").getAddresses().size()==7,"Alcohol stack");
+              check(named(inventory,"Neuropozyne Stack").getAddresses().contains(5864469L),"Neuropozyne stack");
+              check(named(inventory,"Crafting Component Stack").getAddresses().size()==3,"Crafting components");
+
+              byte[] b=new byte[64];
+              byte[] alt={(byte)0xB4,(byte)0x25,(byte)0x47,(byte)0x25};
+              System.arraycopy(alt,0,b,8,4);
+              b[24]=(byte)0xC8;
+              Path p=Files.createTempFile("dxmd-v0713",".bin");
+              Files.write(p,b);
+              String ev=VerifiedHexCatalog.evidenceNear(p.toFile(),24,2,32);
+              check(ev.contains("alternate stack amount"),"B425 marker missing");
+              check(ev.contains("OVERLAPS VERIFIED VALUE"),"B425 layout overlap missing");
+              Files.deleteIfExists(p);
+
+              check(VerifiedParagraphCatalog.ownerFor(5020368L,"Damage")!=null,"Paragraph catalog");
+              System.out.println("v0.7.13 regression audit OK");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V0713Audit.java
+          java -Djava.awt.headless=true -cp build/classes V0713Audit
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.13.jar | grep -q '^VerifiedHexCatalog.class$'
+
+      - name: Package ZIP
+        shell: bash
+        run: |
+          rm -rf build/release-package
+          mkdir -p build/release-package
+          cp dist/DXMD-Archive-Editor-Pro-v0.7.13.jar build/release-package/
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.13.zip DXMD-Archive-Editor-Pro-v0.7.13.jar)
+          echo "ZIP contents:"
+          unzip -l dist/DXMD-Archive-Editor-Pro-v0.7.13.zip
+          test "$(unzip -Z1 dist/DXMD-Archive-Editor-Pro-v0.7.13.zip | wc -l)" -eq 1
+          test "$(unzip -Z1 dist/DXMD-Archive-Editor-Pro-v0.7.13.zip)" = "DXMD-Archive-Editor-Pro-v0.7.13.jar"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.13
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.13.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.13.jar
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.13
+          name: DXMD Archive Editor Pro v0.7.13
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.13.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.13.jar
