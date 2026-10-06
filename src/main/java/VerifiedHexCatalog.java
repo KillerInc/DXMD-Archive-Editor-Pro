@@ -83,6 +83,8 @@ final class VerifiedHexCatalog {
         layout("4A376618",16,4,"blurred-vision duration Float32"),
         layout("72C142AA",16,4,"Biocell energy recovery Float32"),
         layout("8B658735",16,4,"Micro-Assembler crafting cost"),
+        layout("65000977",16,4,"crafted item quantity"),
+        layout("C8E9D6EF",16,4,"5.56mm ammunition unit price"),
         layout("79D898E8",16,4,"base magazine capacity"),
         layout("3D96AB5F",16,4,"cumulative ammo-capacity bonus"),
         layout("77731DD6",16,4,"weapon upgrade stage"),
