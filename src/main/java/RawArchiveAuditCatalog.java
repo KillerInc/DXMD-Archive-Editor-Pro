@@ -127,11 +127,12 @@ final class RawArchiveAuditCatalog {
         String[] supAOrig={"000000","000040","000040","000040","000040"};
         long[] supB={6765741L,6766693L,6767821L,6768573L,6770109L};
         String[] supBOrig={"D8FFFFFF","F6FFFFFF","FBFFFFFF","E2FFFFFF","E7FFFFFF"};
+        String[] supWeapon={"Lancer Rifle","Machine Pistol","10mm Pistol","Tactical Shotgun","Combat Rifle"};
         for(int i=0;i<5;i++){
-            add(BASE,supA[i],supAOrig[i],Level.STRONG_SUSPECTED,"Suppressor Damage-Debuff Component A ["+(i+1)+"/5]",
-                    "I Need The Edge v1.2 differs from v1.1 here while its only documented v1.2 weapon change is removal of suppressor damage debuffs. Exact sub-role remains unresolved.",false);
-            add(BASE,supB[i],supBOrig[i],Level.CONFIRMED,"Suppressor Visual Damage Display Modifier ["+(i+1)+"/5]",
-                    "Verified by the Grognougnou DXMD modding tutorial: SILENCER paragraphs use function 0519EE4D for the inventory/displayed damage adjustment only, and the documented signed values include the exact D8/FB/E2/E7... FF FF FF values present in these fields. This does not change real weapon power.",false);
+            add(BASE,supA[i],supAOrig[i],Level.STRONG_SUSPECTED,supWeapon[i]+" Suppressor Damage-Debuff Component",
+                    "I Need The Edge v1.2 differs from v1.1 here while its only documented v1.2 weapon change is removal of suppressor damage debuffs. Verified paragraph ownership identifies the weapon, but the exact internal sub-role remains unresolved.",false);
+            add(BASE,supB[i],supBOrig[i],Level.CONFIRMED,supWeapon[i]+" Suppressor Visual Damage Display Modifier",
+                    "Verified by the Grognougnou DXMD modding tutorial: this weapon's SILENCER paragraph uses function 0519EE4D for the inventory/displayed damage adjustment only, and the documented signed value matches this field. This does not change real weapon power.",false);
         }
 
         add("DLCPackAssault.layer.0.all.archive",54331L,"05",Level.CONFIRMED,"Elite Battle Rifle Inventory Grid Width",
