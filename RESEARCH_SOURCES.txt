@@ -1218,3 +1218,56 @@ Applied in v0.7.12:
 - Added marker+16 layout for alternate height 5FA99754.
 - Kept all workbook absolute offsets out of BaseOptionCatalog because they target
   Game.layer.0 rather than the current Steam Game.layer.1 archive.
+
+
+======================================================================
+39. HARDCORE REVIVAL 1.024 NORMAL vs OPTIONAL - CONTROLLED LOCAL DIFF
+======================================================================
+Library source:
+- Deus Ex Mankind Divided MOD Hardcore Revival-6-1-24-1766439456.7z
+- DXMD MOD Hardcore Revival (Optional Version)-6-1-24-1766439705.7z
+- Combined ZIP: Deus Ex Mankind Divided MOD both ver.zip
+
+The combined ZIP was materialized from the project library and compared locally.
+
+Author-stated controlled difference:
+- Optional is otherwise identical to Normal.
+- ammunition stacks become 500.
+- item stacks become 50.
+
+Binary result:
+- DLCPackAssault.layer.0.all.archive: byte-identical.
+- DLCPackClassic.layer.0.all.archive: byte-identical.
+- DLCPackEnforcer.layer.0.all.archive: byte-identical.
+- DLCPackIntruder.layer.0.all.archive: byte-identical.
+- DLCPackTactical.layer.0.all.archive: byte-identical.
+- Game.layer.1.all.archive: exactly 60 changed runs / 83 changed bytes.
+
+The 60 Base differences split into:
+- 34 stack fields already exposed/known by the normal editor.
+- 26 additional stack fields not previously represented in the normal controls.
+
+Most differences are exactly marker 8D0137A2 +16.
+Seven additional stack changes use a second repeated record marker:
+- B4254725
+with the editable stack value again at marker +16.
+
+Because this is a single-variable author-documented comparison and every changed run
+matches the documented stack targets (500 ammunition or 50 items), the 26 additional
+Base offsets are promoted to CONFIRMED generic Inventory Stack Amount mappings without
+inventing item identities.
+
+Additional confirmed Base stack offsets:
+4909661, 4920789, 4924701, 4927085, 4930765, 4932517, 4934509,
+5050405, 5051309, 5052261, 5053221, 5054125, 5055117,
+5709845, 5757237, 5757845, 5758453,
+5851957, 5852685, 5853501,
+5864469, 5866069, 5866765, 5867429,
+6617717, 7559005.
+
+Portable mapping added:
+- B4254725 = alternate inventory stack amount record marker.
+- editable stack value = marker +16.
+
+No DLC stack mappings are inferred from this comparison because the five DLC archives are
+exactly identical between the Normal and Optional packages.
