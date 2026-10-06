@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.7.11  
+> **Current version:** v0.7.12  
 > **Runtime:** Java 21 or newer  
 > **Primary platform:** Windows
 
@@ -48,6 +48,14 @@ The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki 
 ## v0.7.3 tab readability fix
 
 v0.7.3 fixes dark/black text that could remain on top-level tabs under Nimbus. The theme now supplies explicit Nimbus text colors for enabled, selected, focused, hover and pressed tab states, and also forces per-tab foreground/background colors at runtime. Selected tabs use white text; inactive tabs use the light application text color.
+
+## v0.7.12 research integration
+
+v0.7.12 folds the latest verified DXMD reverse-engineering research into the application without changing the project's existing confidence methodology. Research Inspector now recognizes verified hash/function markers in loaded archives, distinguishes simple marker proximity from a selected run that overlaps a published value slot, and adds verified weapon/upgrade paragraph ownership as context without automatically promoting confidence.
+
+The recovered `deusex_md_invetory.xlsx` workbook adds portable record identities for displayed weapon Accuracy (`578E035D`), Damage/Lethality (`0519EE4D`), Rate of Fire (`652633EC`), Recoil (`4801D357`) and Reload Speed (`3EE6E864`), plus the already-known base magazine record (`79D898E8`). These workbook offsets are Game.layer.0-specific, so v0.7.12 applies the portable hashes/layouts rather than copying incompatible absolute offsets into the Steam/Game.layer.1 editor.
+
+See **RESEARCH_SOURCES.txt** for the persistent source log, exact mappings, contradictions, blocked-download notes and remaining research targets.
 
 ## v0.7.11 full code and text audit
 
