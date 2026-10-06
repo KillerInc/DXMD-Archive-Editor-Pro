@@ -855,3 +855,36 @@ Contradictions are preserved:
   remains unresolved in production ownership.
 - 6596928 was called Devastator Shotgun Reload 2 in one list and unresolved in another,
   so it remains unresolved in production ownership.
+
+
+======================================================================
+27. VERIFIED HEX MARKER RUNTIME SCANNER
+======================================================================
+Repository artifact:
+- src/main/java/VerifiedHexCatalog.java
+- ResearchInspectorPanel integration
+
+When a real archive is loaded, Research Inspector now scans around the selected row for
+published verified hash/function markers and reports the marker, its archive offset and its
+distance from the research row.
+
+The catalog covers the verified inventory, price, consumable, crafting, weapon-upgrade,
+weapon-stat and augmentation markers recorded in this file.
+
+This is evidence-only. A nearby marker identifies surrounding record structure but never
+promotes a selected changed byte automatically.
+
+File availability check:
+The accessible ChatGPT conversation/library file store was searched for clean Game.layer.1,
+DLC archives and earlier Hardcore/Adam/I Need The Edge comparison archives. No usable raw
+archive was available in the accessible store during this pass, so no absolute offsets were
+invented from partial diff data.
+
+The 2020 deusex_md_invetory.xls page remains indexed and states that its workbook contains
+offsets/hex for width, height, stacks, accuracy, damage, magazine capacity, rate of fire,
+recoil and reload speed, but the workbook bytes were not retrievable through the available
+web path.
+
+Global web/GitHub searches using the newly verified hashes and paragraph offsets produced
+no additional trustworthy DXMD hash dictionary beyond the primary mod authors already
+documented here.
