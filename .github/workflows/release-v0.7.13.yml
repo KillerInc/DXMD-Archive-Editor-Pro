@@ -88,7 +88,7 @@ jobs:
                 var m=map.get(e.getKey());
                 check(m!=null,"Missing mapping "+e.getKey());
                 check(m.level==RawArchiveAuditCatalog.Level.CONFIRMED,"Not confirmed "+e.getKey());
-                check(e.getValue().equals(m.originalHex),"Wrong clean original "+e.getKey()+" got "+m.originalHex);
+                String got=HexFormat.of().formatHex(m.original).toUpperCase(Locale.ROOT);\n                check(e.getValue().equals(got),"Wrong clean original "+e.getKey()+" got "+got);
                 check(!m.name.startsWith("Inventory Stack Amount ["),"Generic stack label remained "+e.getKey());
               }
 
