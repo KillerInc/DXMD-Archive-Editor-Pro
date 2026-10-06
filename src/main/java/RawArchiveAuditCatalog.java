@@ -130,8 +130,8 @@ final class RawArchiveAuditCatalog {
         for(int i=0;i<5;i++){
             add(BASE,supA[i],supAOrig[i],Level.STRONG_SUSPECTED,"Suppressor Damage-Debuff Component A ["+(i+1)+"/5]",
                     "I Need The Edge v1.2 differs from v1.1 here while its only documented v1.2 weapon change is removal of suppressor damage debuffs. Exact sub-role remains unresolved.",false);
-            add(BASE,supB[i],supBOrig[i],Level.STRONG_SUSPECTED,"Suppressor Damage-Debuff Component B ["+(i+1)+"/5]",
-                    "Paired with the adjacent component changed by I Need The Edge v1.2 suppressor-debuff removal; exact internal sub-role remains unresolved.",false);
+            add(BASE,supB[i],supBOrig[i],Level.CONFIRMED,"Suppressor Visual Damage Display Modifier ["+(i+1)+"/5]",
+                    "Verified by the Grognougnou DXMD modding tutorial: SILENCER paragraphs use function 0519EE4D for the inventory/displayed damage adjustment only, and the documented signed values include the exact D8/FB/E2/E7... FF FF FF values present in these fields. This does not change real weapon power.",false);
         }
 
         add("DLCPackAssault.layer.0.all.archive",54331L,"05",Level.CONFIRMED,"Elite Battle Rifle Inventory Grid Width",
@@ -164,15 +164,15 @@ final class RawArchiveAuditCatalog {
         add("DLCPackEnforcer.layer.0.all.archive",31593120L,"000040",Level.STRONG_SUSPECTED,
                 "Elite Combat Rifle Suppressor Damage-Debuff Component A",
                 "I Need The Edge v1.2 changes this component only in the documented suppressor-debuff removal update; exact internal sub-role remains unresolved.",false);
-        add("DLCPackEnforcer.layer.0.all.archive",31593408L,"E7FFFFFF",Level.STRONG_SUSPECTED,
-                "Elite Combat Rifle Suppressor Damage-Debuff Component B",
-                "Paired Enforcer component changed by the same suppressor-debuff removal update; exact internal sub-role remains unresolved.",false);
+        add("DLCPackEnforcer.layer.0.all.archive",31593408L,"E7FFFFFF",Level.CONFIRMED,
+                "Elite Combat Rifle Suppressor Visual Damage Display Modifier",
+                "Verified by the Grognougnou DXMD modding tutorial: E7 FF FF FF is a documented SILENCER visual damage-display modifier used with function 0519EE4D. It changes the displayed damage value only, not real weapon power.",false);
         add("DLCPackIntruder.layer.0.all.archive",14844586L,"000040",Level.STRONG_SUSPECTED,
                 "Elite Pistol Suppressor Damage-Debuff Component A",
                 "I Need The Edge v1.2 changes this component only in the documented suppressor-debuff removal update; exact internal sub-role remains unresolved.",false);
-        add("DLCPackIntruder.layer.0.all.archive",14844874L,"FBFFFFFF",Level.STRONG_SUSPECTED,
-                "Elite Pistol Suppressor Damage-Debuff Component B",
-                "Paired Intruder component changed by the same suppressor-debuff removal update; exact internal sub-role remains unresolved.",false);
+        add("DLCPackIntruder.layer.0.all.archive",14844874L,"FBFFFFFF",Level.CONFIRMED,
+                "Elite Pistol Suppressor Visual Damage Display Modifier",
+                "Verified by the Grognougnou DXMD modding tutorial: FB FF FF FF is a documented SILENCER visual damage-display modifier used with function 0519EE4D. It changes the displayed damage value only, not real weapon power.",false);
     }
 
     private static void silencerFunction(String archive,long offset,String weapon){
