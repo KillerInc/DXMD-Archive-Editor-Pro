@@ -54,7 +54,9 @@ final class FieldConfidenceAudit {
 
         String family=weaponFamily(f.label);
         if (family!=null) {
-            String subject=(nearbySpecific==null||nearbySpecific.trim().isEmpty())?"Weapon":nearbySpecific;
+            String verifiedOwner=VerifiedParagraphCatalog.ownerFor(f.offset,family);
+            String subject=verifiedOwner!=null ? verifiedOwner
+                    : (nearbySpecific==null||nearbySpecific.trim().isEmpty()) ? "Weapon" : nearbySpecific;
             if (isBaseUpgradeCostCandidate(f, family)) {
                 return new Assessment(Confidence.STRONG_SUSPECTED,
                         "Strong suspected: "+subject+" "+family+" Upgrade Parts Cost — "+seriesAndComponent(f.label),
@@ -295,10 +297,12 @@ final class FieldConfidenceAudit {
         ArrayList<String> changed=new ArrayList<>();
         for (Map.Entry<String,byte[]> e:f.references.entrySet())
             if (e.getValue()!=null && !Arrays.equals(e.getValue(),f.original)) changed.add(e.getKey());
+        String owner=VerifiedParagraphCatalog.ownerFor(f.offset,family);
+        String paragraph=owner==null ? "" : " Published hex research places this row inside the "+owner+" "+family+" paragraph. That proves record ownership/context, not this changed byte's exact semantic role.";
         if (changed.contains("Hardcore Normal") || changed.contains("Hardcore Optional")) {
-            return "Changed by Hardcore Revival. That mod changes weapon damage, range, accuracy, reload time, recoil and attachment bonuses together, so the generated "+family+" family is useful context but does not isolate the exact sub-stat. Candidate: "+familyHint(family)+".";
+            return "Changed by Hardcore Revival. That mod changes weapon damage, range, accuracy, reload time, recoil and attachment bonuses together, so the generated "+family+" family is useful context but does not isolate the exact sub-stat."+paragraph+" Candidate: "+familyHint(family)+".";
         }
-        return "The row sits in a generated "+family+" family, but no focused comparison isolates its exact sub-stat. Candidate: "+familyHint(family)+".";
+        return "The row sits in a generated "+family+" family, but no focused comparison isolates its exact sub-stat."+paragraph+" Candidate: "+familyHint(family)+".";
     }
 
     private static String dlcFamilyEvidence(String profileName, DLCProfiles.Field f, String family) {
