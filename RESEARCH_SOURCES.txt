@@ -1,0 +1,400 @@
+DXMD ARCHIVE EDITOR PRO - RESEARCH SOURCES
+Last updated: 2026-10-06
+
+PURPOSE
+This file records external DXMD reverse-engineering/modding sources already researched,
+what each source establishes, and how that information has been used by the editor.
+
+IMPORTANT METHODOLOGY
+The editor's existing confidence methodology is unchanged:
+CONFIRMED / STRONG_SUSPECTED / SUSPECTED / UNIDENTIFIED.
+External information is used only when it supports an existing mapping or provides a
+concrete new identification. Nearby names, record-family labels, or general mod claims
+are not treated as proof of a specific byte.
+
+======================================================================
+1. GROGNouGNOU - DXMD MODDING TUTORIALS
+======================================================================
+URL:
+https://www.grognougnou.com/mods-tutorials-deus-ex-mankind-divided.html
+
+Status:
+VERIFIED SOURCE by project owner. Treat clearly stated technical information on this
+page as verified DXMD information. When the page itself says a meaning is uncertain
+or possible, preserve that uncertainty.
+
+Major archive/DLC structure:
+- Game.layer.1.all.archive contains much of the compact gameplay data used by mods.
+- DLCPackAssault.layer.0.all.archive = Elite Assault Rifle + CHAFF upgrade.
+- DLCPackClassic.layer.0.all.archive = Classic Revolver.
+- DLCPackEnforcer.layer.0.all.archive = Elite Combat Rifle.
+- DLCPackIntruder.layer.0.all.archive = Elite 10mm Zenith Pistol.
+- DLCPackTactical.layer.0.all.archive = Elite Tranquilizer Rifle + Disassembler augmentation.
+
+Verified item/inventory functions:
+- 8BB5F8E1 = inventory length for most items.
+- 8E6BC587 = inventory length for firearms/multitools/special items.
+- 0E609B24 = inventory height for ammo/grenades/mines/consumables/etc.
+- 5FA99754 = inventory height for multitools/Jammer/Killswitch.
+- 8D0137A2 = stack amount.
+- Base records commonly use 17 00 00 00 separators.
+- DLC inventory records commonly use 09 00 00 00 separators.
+- Small firearms such as pistol/revolver/stun gun have inventory-size limitations.
+
+Verified price functions:
+- 2A28DFE5 = consumable item price.
+- B9B2FE47 = machine parts / disassembly / some upgrade / grenade/mine/etc. price family.
+- 20EDD36A = multitool price.
+- C8E9D6EF = 5.56mm ammo price.
+- ED3C00CD = 10mm ammo price.
+- 0E90F2F6 = shotgun ammo price.
+- 4A2034A4 = 40mm ammo price.
+- 6C8E04FF = 7.62mm ammo price.
+- 6038AA15 = 9mm ammo price.
+- 594FCED0 = revolver ammo price.
+- 5697B650 = stun gun ammo price.
+- 015248E0 = tranquilizer ammo price.
+- EF482EB8 = .416 ammo price.
+- CD7BD3AF = shotgun EMP ammo price.
+- 56CFB420 = revolver EMP ammo price.
+- 76771038 = 9mm EMP ammo price.
+- 0344B883 = 5.56mm EMP ammo price.
+- 0C092EF3 = 10mm EMP ammo price.
+- 28084B16 and 0B06F865 = unidentified EMP-ammo price records.
+- 9A590F0A = weapon price (except Grenade Launcher).
+- B368F1C3 = Grenade Launcher price.
+- A76435AB = EMP grenade/mine price.
+- A463A1F8 = gas grenade/mine price.
+- 563E4A81 = frag grenade/mine price.
+- 16C64E9C = concussion grenade/mine price.
+- E856DF13 = smoke grenade/mine price.
+
+Verified consumable/effect functions:
+- 4A376618 = blurred-vision duration.
+- F1F9CDA5 = normal health recovery.
+- E1B6D572 = special/alcohol health recovery.
+- 72C142AA = Biocell energy recovery.
+- 8B658735 = Micro-Assembler spare-parts crafting cost.
+- 65000977 = number of items crafted per recipe/action.
+
+Verified weapon base/upgrade functions:
+- 79D898E8 = base magazine capacity.
+- 3D96AB5F = cumulative upgraded magazine-capacity bonus.
+- 77731DD6 = weapon-upgrade stage/level marker (01/02/03).
+- 585B7C22 = spare-parts cost for a weapon customization/upgrade.
+- EA10EDF8 = base firing timing / shot duration component.
+- F8861A4C = delay-before-next-shot component.
+- D42EB87C = third base rate-of-fire component.
+- 72365784 = rate-of-fire upgrade bonus.
+- 6712F5D4 = alternate rate-of-fire upgrade bonus.
+- A1B89DD4 = weapon range.
+- 5F317320 = base reload speed.
+- FA600225 = reload-speed upgrade bonus.
+- 2B4352B8 = functional weapon damage bonus/malus used in upgrade records,
+  including SILENCER downgrade records.
+- 915125A7 and E168CFB1 are damage-related bonus fields, but the source only
+  proposes that they may relate to medium/long range. Do NOT mark those exact
+  meanings confirmed without additional evidence.
+
+CRITICAL visual-vs-functional distinction:
+- 0519EE4D affects weapon damage DISPLAY only; it does not change real weapon power.
+- SILENCER records use 0519EE4D with signed display modifiers including:
+  D8 FF FF FF (-40), F1 FF FF FF (-15), F6 FF FF FF (-10),
+  FB FF FF FF (-5), E2 FF FF FF (-30), E7 FF FF FF (-25),
+  EC FF FF FF (-20), plus other documented values.
+- Functional damage modification is separate and uses gameplay-stat fields such as
+  2B4352B8.
+- This distinction was applied to RawArchiveAuditCatalog: previously ambiguous
+  suppressor "Component B" rows matching these signed display values were promoted
+  to confirmed visual damage-display modifiers.
+
+Verified augmentation/energy functions:
+- 379F683F is commonly used for augmentation energy use, BUT the same function code
+  is also used for FOV/camera parameters. Context is required.
+- 22C6ABC4 = takedown energy-use function. The adjacent float is the energy cost.
+- 4C1BC5B1 = player's automatic/base energy-regeneration amount.
+
+Weapon upgrade block organization:
+- Weapon base stats live in weapon paragraphs.
+- Upgrade bonuses live in separate AMMO_CAPACITY_, DAMAGE_, RATE_OF_FIRE_,
+  RELOAD_SPEED_, RECOIL_, SILENCER, FIRE_PATTERN and related records.
+- Upgrade records often do not identify the owning weapon directly.
+- AMMO_CAPACITY stages are cumulative: stage 2 includes stage 1; stage 3 is total.
+- The same elimination/test method applies to other weapon upgrade families.
+
+Known Base archive paragraph starts listed by Grognougnou:
+10mm Pistol:
+- ROF 1 6551152; ROF 2 6552048; ROF 3 6551600
+- Damage 1 5031456; Damage 2 5031936; Damage 3 5032400
+- Reload 1 6588432; Silencer 6767488; Ammo Capacity 3 4435232
+- Full Auto Fire Pattern 5665120
+Stun Gun:
+- Ammo Capacity 1 4431792; 2 4433184; 3 4434944
+- Reload 1 6590560; Accuracy 1 4317472; Accuracy 2 4326784; Laser 5883232
+Revolver:
+- ROF 1 6543888; 2 6547392; 3 6548720
+- Hair-trigger Fire Pattern 5664672
+Machine Pistol:
+- ROF 1 6544304; 2 6548256; 3 6549552
+- Damage 1 5020368; 2 5027040; 3 5028496
+- Reload 1 6592304; Silencer 6766288; Full Auto 5665456
+Combat Rifle:
+- Damage 1 5022768; Damage 2 5024176; Damage 3 5029312
+- Reload 1 5697648; Silencer 6769792; Semi Auto 5665760
+Tactical Shotgun:
+- Damage 1 5021824; 2 5026096; 3 5030944
+- ROF 1 6545184; 2 6547808; 3 6549168
+- Reload 1 6586192; Ammo Capacity 2 4427872
+- Silencer 6768224; Burst Fire 5666576
+Devastator Shotgun:
+- Damage 1 5020880; 2 5026576; 3 5030528; Reload 2 6596928
+Battle Rifle:
+- ROF 1 6544752; 2 6546048; 3 6550320
+- Damage 1 5023232; Damage 2 5027520; Damage 3 5029712
+- Recoil 1 6561072; Recoil 2 6570544; Reload 1 6592672
+Lancer Rifle:
+- Damage 1 5021344; 2 5024688; 3 5030128
+- Reload 1 6587680; Reload 2 6594112; Silencer 6765424
+Sniper Rifle:
+- Damage 1 5023712; 2 5025632; 3 5027984
+- Reload 1 6591568
+- Ammo Capacity 1 4428880; 2 4431376; 3 4426672
+Grenade Launcher:
+- Reload 1 6588800; Recoil 1 6564272
+Tranquilizer Rifle:
+- Reload 1 6586992
+- Ammo Capacity 1 4430480; 2 4432448; 3 4434608
+- Recoil 1 6560528
+Additional identified reload/recoil paragraphs are listed on the source page and should
+be consulted before assigning a weapon to a generated family.
+
+Videos/tutorial demonstrations on Grognougnou's DXMD pages:
+- Unlimited invisibility demonstrates augmentation energy use can be removed.
+- Cote d'Azur mod demonstrates functional weapon-stat modification.
+- Overheating mod demonstrates experimental-upgrade overclock modifications.
+- Better AI demonstrates reaction/noise behavior can be modified.
+- Hardcore Revival videos demonstrate combined inventory/economy/weapon/augmentation changes.
+These demonstrations support that these systems are editable but do not by themselves
+identify a byte unless the written tutorial or controlled archive comparison isolates it.
+
+======================================================================
+2. GROGNouGNOU - HARDCORE REVIVAL
+======================================================================
+URLs:
+https://www.grognougnou.com/mankind-divided-mod-hardcore-revival.html
+https://www.nexusmods.com/deusexmankinddivided/mods/6
+https://www.moddb.com/downloads/mod-hardcore-divided-for-deus-ex-mankind-divided
+
+Use:
+Important comparison/archive source already present in the editor's research dataset.
+
+Documented changes include:
+- Inventory size, stacking and prices.
+- Consumable health/energy/blur effects.
+- Weapon damage, reload time, recoil, rate of fire and range.
+- Weapon upgrade strength and Weapon Parts costs.
+- Praxis costs, augmentation energy costs and default enabled/disabled states.
+- Experimental-augmentation overheating/instability behavior.
+- AI reaction/noise behavior and later resistance/immunity work.
+Because Hardcore changes many systems at once, a row changing in Hardcore alone does
+not isolate its precise semantic meaning. Existing conservative confidence rules remain valid.
+
+======================================================================
+3. I NEED THE EDGE
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/36
+
+Controlled/documented deltas useful to field identification:
+v1.1:
+- Tranquilizer Rifle magazine 6 -> 12.
+- Elite Tranquilizer Rifle magazine 10 -> 4.
+- Lancer Rifle magazine 3 -> 9.
+- Grenade Launcher ammo inventory height 2 -> 1.
+- Dermal Armor and Damage Reduction Level 1 enabled by default in Dubai.
+v1.2:
+- Suppressor damage-output debuffs removed from Base and DLC weapons.
+
+These comparisons are already used heavily by RawArchiveAuditCatalog.
+New Grognougnou knowledge clarifies that suppressor comparison changes may include both
+functional damage fields and the separate 0519EE4D visual display modifier.
+
+======================================================================
+4. SILENCE TO THE GUNS
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/43?tab=docs
+
+Useful discoveries:
+- Built-in silencer behavior can be enabled separately from SILENCER add-on stat modifiers.
+- The built-in-silencer function does not itself modify weapon stats.
+- Silencer add-on stat/behavior modifications still apply independently when attached.
+- Built-in silencing is reported to work for nearly all weapons except Devastator Shotgun
+  and Grenade Launcher.
+- Bolt-action -> semi-auto conversion applies to Stun Gun, Tranquilizer Rifle and Lancer Rifle.
+- Applying some function-slot changes to an existing save may cause standard reticles to
+  disappear; starting a new game avoided the observed problem.
+- This source supplied controlled archive comparisons used to confirm several function-slot,
+  built-in-silencer toggle and bolt-action toggle mappings.
+
+======================================================================
+5. ADAM 2.0 / ADAM 3.0
+======================================================================
+URLs:
+https://www.nexusmods.com/deusexmankinddivided/mods/14
+https://www.nexusmods.com/deusexmankinddivided/mods/49
+
+Adam 2.0:
+- Converts experimental augmentations to normal augmentations.
+- Useful focused evidence for experimental-augmentation gate markers.
+
+Adam 3.0 documented changes:
+- Removes augmentation power consumption.
+- Silences most weapon noise.
+- Modifies most weapon damage values.
+- Removes Weapon Parts required to upgrade weapons.
+- Removes praxis requirement for most augmentations.
+- Converts experimental augmentations to normal.
+- Increases stack sizes.
+- Makes craftable items cost no spare parts.
+Because Adam 3.0 is broad, it is excellent for candidate discovery but normally cannot
+confirm exact sub-fields without a narrower comparison. Existing editor logic correctly
+uses its zeroed two-byte upgrade-cost patterns as STRONG_SUSPECTED unless independently
+confirmed.
+
+======================================================================
+6. DEUS EX MANKIND DIVIDED - TWEAKS
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/13?tab=docs
+
+Documented changes:
+- Crafting costs reduced to 25.
+- Vendor praxis price reduced.
+- Punch Through Wall energy use removed.
+- Weapon Parts and most stackable item stacks raised to 9999.
+- Rebreather energy use removed.
+- XP increased broadly.
+- EMP Shielding energy use removed.
+Useful as a comparison source, but multiple changes in one archive mean exact byte semantics
+still require focused comparison or a verified function identifier.
+
+======================================================================
+7. MORE ENERGY REGENERATION
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/24
+
+Purpose:
+Raises the minimum/automatic regenerated energy level.
+This source and related variants provide focused comparison evidence for the editor's
+confirmed Energy Auto-Regeneration Limit mapping. Grognougnou's verified tutorial gives
+the independent function identifier 4C1BC5B1 for this system.
+
+======================================================================
+8. LIGHTPOWER1 - ORIGINAL DXMD ARCHIVE FILE EDITOR TOOL
+======================================================================
+URLs:
+https://www.nexusmods.com/deusexmankinddivided/mods/18
+https://www.moddb.com/games/deus-ex-mankind-divided/downloads/dxmd-archive-file-editor-tool
+
+Facts:
+- Original Java editor that DXMD Archive Editor Pro grew from.
+- Source is included in the original JAR.
+- Exposes known archive edits including XP, stacking and crafting costs.
+- Explicitly credits MohamedASalama and Grognougnou for archive-edit discoveries.
+- Historical Python versions also included archive comparison tooling.
+Use:
+Baseline provenance and source for established normal-editor mappings. Do not assume an
+old label is correct solely because it appeared in the old editor; current raw audit and
+verified research take precedence.
+
+======================================================================
+9. DEMD DATABASE / DXMDEXTRACT / NAMEMAP
+======================================================================
+URLs:
+https://github.com/aspadm/DEMD-database-old
+https://dxgalaxy.org/guides/extraction/dxmd/md_aud-vid/
+
+Facts:
+- DEMDDatabase uses DXMDExtract/Sir Kane tooling to unpack DXMD archives/resources.
+- NameMap.txt is used to build a browsable resource/file tree.
+- Base runtime and DLC runtime NameMaps are separate and cannot simply be merged in the
+  historical DEMDDatabase workflow.
+- The older GUI references .archive and .pc_headerlib data and credits Sir Kane/Sir Kaine.
+Use:
+Important structural cross-reference for logical resource naming and HeaderLib/resource
+relationships. Particularly useful when a Research Inspector row has structural location
+but no semantic name.
+
+======================================================================
+10. SIR KANE / DXMDEXTRACT HISTORICAL FORMAT RESEARCH
+======================================================================
+References:
+DEMDDatabase help and archived ZenHAX/ResHax discussions.
+
+Useful structural point:
+Sir Kane described the DXMD extraction work as handling HeaderLib/resource-library data.
+Historical discussion distinguishes .archive/.pc_headerlib/.pc_resourcelib from audio/video
+resource types. This supports the editor's separation of archive container indexing,
+HeaderLib structure and logical resource payload mapping.
+
+======================================================================
+11. Dvdkon - DXMD_MODDING / MDSUEN
+======================================================================
+URL:
+https://gitlab.com/dvdkon/dxmd_modding
+Related discussion:
+https://www.reddit.com/r/Deusex/comments/gfqasf
+
+Research value:
+- Reverse-engineering project for the game's hidden menus, console and internal systems.
+- Author reported using a developer presentation and non-stripped macOS binary with class
+  and function names to understand the resource/entity systems.
+- Potential future source for deeper resource/entity semantics, but no byte-level field
+  promotions should be made from general statements alone.
+
+======================================================================
+12. PROJECT'S OWN RAW ARCHIVE AUDIT
+======================================================================
+Repository:
+https://github.com/KillerInc/DXMD-Archive-Editor-Pro
+
+The project's controlled archive set remains the primary byte-level evidence:
+- Clean Base + DLC baselines.
+- Deduplicated modified archive variants.
+- Exact changed-byte runs.
+- Focused comparisons for magazine capacity, inventory dimensions, energy, experimental
+  augmentation gates, silencer/function-slot behavior, etc.
+
+External research is cross-checked against this audit rather than replacing it.
+
+======================================================================
+CHANGES APPLIED FROM 2026-10-06 RESEARCH
+======================================================================
+1. Preserved the existing CONFIRMED / STRONG_SUSPECTED / SUSPECTED / UNIDENTIFIED methodology.
+2. Corrected suppressor signed "Component B" values that match Grognougnou's documented
+   0519EE4D values:
+   - Base matching rows -> Suppressor Visual Damage Display Modifier (CONFIRMED).
+   - Elite Combat Rifle E7 FF FF FF -> visual damage-display modifier (CONFIRMED).
+   - Elite Pistol FB FF FF FF -> visual damage-display modifier (CONFIRMED).
+   These fields affect displayed damage only, not real weapon power.
+3. Strengthened existing confirmed evidence for:
+   - Biocell Energy Gain with verified function 72C142AA.
+   - Takedown Energy Cost with verified function 22C6ABC4.
+   - Energy Auto-Regeneration Limit with verified function 4C1BC5B1.
+4. Did NOT promote:
+   - 915125A7 or E168CFB1 to specific range-distance meanings.
+   - neighboring suppressor functional fields beyond what controlled comparisons prove.
+   - generated DAMAGE_/ROF_/RELOAD_/RECOIL_ rows solely because their family/paragraph is known.
+   Exact byte semantics still require evidence under the existing audit rules.
+
+FUTURE RESEARCH TARGETS
+- Resolve 2B4352B8 functional suppressor damage values against the remaining suppressor rows.
+- Match known paragraph starts to Research Inspector logical-resource records and weapon owners.
+- Use NameMap/resource-tree data to improve names of currently structural-only resources.
+- Isolate exact base Rate-of-Fire components EA10EDF8/F8861A4C/D42EB87C.
+- Isolate 72365784 vs 6712F5D4 upgrade semantics per weapon.
+- Resolve reload bonus FA600225 rows per weapon/stage.
+- Identify exact values behind item price hashes not yet exposed as normal editor controls.
+- Continue separating display-only values from gameplay-functional values.
