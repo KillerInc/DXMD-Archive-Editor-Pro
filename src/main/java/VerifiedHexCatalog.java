@@ -19,6 +19,7 @@ final class VerifiedHexCatalog {
         m("0E609B24","Inventory height"),
         m("5FA99754","Alternate inventory height"),
         m("8D0137A2","Inventory stack amount"),
+        m("B4254725","Alternate inventory stack amount"),
 
         m("2A28DFE5","Consumable shop price"),
         m("B9B2FE47","Parts / disassembly / item price"),
@@ -85,6 +86,7 @@ final class VerifiedHexCatalog {
         layout("0E609B24",16,4,"inventory height"),
         layout("5FA99754",16,4,"alternate inventory height"),
         layout("8D0137A2",16,4,"stack amount"),
+        layout("B4254725",16,4,"alternate stack amount"),
         layout("4A376618",16,4,"blurred-vision duration Float32"),
         layout("72C142AA",16,4,"Biocell energy recovery Float32"),
         layout("8B658735",16,4,"Micro-Assembler crafting cost"),
