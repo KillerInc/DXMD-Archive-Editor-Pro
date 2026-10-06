@@ -10,7 +10,7 @@ import java.util.*;
 final class VerifiedHexCatalog {
     record Hit(long offset, String hex, String meaning) {}
 
-    private record Marker(byte[] bytes, String hex, String meaning) {}
+    private record Marker(byte[] bytes, String hex, String meaning) {}\n    private record Layout(String hex, int valueDelta, int valueWidth, String valueMeaning) {}
 
     private static final Marker[] MARKERS = {
         m("8BB5F8E1","Item inventory width"),
@@ -74,6 +74,26 @@ final class VerifiedHexCatalog {
         m("0ACC4075","Experimental / overclock augmentation marker")
     };
 
+    private static final Layout[] LAYOUTS = {
+        layout("8BB5F8E1",16,4,"item inventory width"),
+        layout("8E6BC587",16,4,"weapon / multitool inventory width"),
+        layout("0E609B24",16,4,"inventory height"),
+        layout("8D0137A2",16,4,"stack amount"),
+        layout("4A376618",16,4,"blurred-vision duration Float32"),
+        layout("72C142AA",16,4,"Biocell energy recovery Float32"),
+        layout("8B658735",16,4,"Micro-Assembler crafting cost"),
+        layout("79D898E8",16,4,"base magazine capacity"),
+        layout("3D96AB5F",16,4,"cumulative ammo-capacity bonus"),
+        layout("77731DD6",16,4,"weapon upgrade stage"),
+        layout("585B7C22",16,4,"weapon upgrade parts cost"),
+        layout("EA10EDF8",16,4,"base rate-of-fire timing Float32"),
+        layout("72365784",16,4,"rate-of-fire upgrade bonus Float32"),
+        layout("A1B89DD4",16,4,"weapon range Float32"),
+        layout("5F317320",16,4,"base reload speed Float32"),
+        layout("22C6ABC4",16,4,"takedown energy cost Float32"),
+        layout("4C1BC5B1",16,4,"automatic energy-regeneration amount Float32")
+    };
+
     private VerifiedHexCatalog() {}
 
     static List<Hit> findNear(File file, long center, int radius) {
@@ -100,7 +120,7 @@ final class VerifiedHexCatalog {
         return out;
     }
 
-    static String evidenceNear(File file,long center,int radius){
+    static String evidenceNear(File file,long center,int radius){ return evidenceNear(file,center,1,radius); }\n\n    static String evidenceNear(File file,long center,int rowLength,int radius){
         List<Hit> hits=findNear(file,center,radius);
         if(hits.isEmpty()) return "";
         StringBuilder s=new StringBuilder();
@@ -112,12 +132,32 @@ final class VerifiedHexCatalog {
             s.append("\n  ").append(h.hex).append(" = ").append(h.meaning)
                     .append(" @ ").append(h.offset)
                     .append(" (").append(d>=0?"+":"").append(d).append(" bytes from row)");
+            Layout l=layoutFor(h.hex);
+            if(l!=null){
+                long valueStart=h.offset+l.valueDelta;
+                long valueEnd=valueStart+l.valueWidth;
+                long rowEnd=center+Math.max(1,rowLength);
+                if(center<valueEnd && rowEnd>valueStart){
+                    s.append("\n    SELECTED RUN OVERLAPS VERIFIED VALUE: ").append(l.valueMeaning)
+                            .append(" @ ").append(valueStart).append("..").append(valueEnd-1);
+                } else {
+                    s.append("\n    Published value location: marker +").append(l.valueDelta)
+                            .append(" = ").append(l.valueMeaning)
+                            .append(" @ ").append(valueStart).append("..").append(valueEnd-1);
+                }
+            }
         }
-        s.append("\nMarker proximity identifies surrounding record structure; it does not by itself prove the selected changed byte's exact role.");
+        s.append("\nMarker proximity identifies surrounding record structure. Only an explicit published layout can show that the selected run overlaps the named value; confidence still follows the existing audit rules.");
         return s.toString();
     }
 
+    private static Layout layoutFor(String hex){
+        for(Layout l:LAYOUTS) if(l.hex.equals(hex)) return l;
+        return null;
+    }
+
     private static Marker m(String hex,String meaning){return new Marker(parse(hex),hex,meaning);}
+    private static Layout layout(String hex,int delta,int width,String meaning){return new Layout(hex,delta,width,meaning);}
 
     private static byte[] parse(String hex){
         byte[] b=new byte[hex.length()/2];

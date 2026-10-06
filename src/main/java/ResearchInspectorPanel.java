@@ -361,7 +361,7 @@ public class ResearchInspectorPanel extends JPanel {
                     + ". Location alone does not prove gameplay meaning.";
         }
         if (activeSource != null && activeSource.file != null && activeSource.file.isFile()) {
-            String markerEvidence = VerifiedHexCatalog.evidenceNear(activeSource.file, row.offset, 384);
+            String markerEvidence = VerifiedHexCatalog.evidenceNear(activeSource.file, row.offset, row.length, 384);
             if (!markerEvidence.isEmpty()) evidence += "\n\n" + markerEvidence;
         }
         evidenceArea.setText(evidence);
