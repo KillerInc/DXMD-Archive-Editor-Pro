@@ -1,19 +1,22 @@
-# DXMD Archive Editor Pro v0.7.11
+# DXMD Archive Editor Pro v0.7.12
 
-## Full code + redundant-text audit
+## Research integration release
 
-- Audited the complete Java source tree and all current Base/DLC research presentation paths.
-- Removed duplicated confidence wording from Attribute; Status remains the confidence column.
-- Shortened Research Inspector headings/status text and known-stat tab wording without removing evidence.
-- Streamed archive text scanning instead of loading entire archives into heap.
-- Added animated background loading when switching Research Inspector archives.
-- Added true unsigned 64-bit editing through 18446744073709551615.
-- Stopped candidate inspection from inventing zero bytes when an archive is not loaded.
-- Grouped normal controls now mark mixed underlying values.
-- Boolean controls reject unexpected raw encodings instead of silently coercing them.
-- ARCH indexing no longer guesses that a single linked archive is the current file.
-- Preserved monospaced raw-byte/interpretation views.
-- Hardened bundled DLC/profile and compressed-resource parsing.
-- Java 21 compile, lint and profile/UI regressions run before release.
+- Added verified runtime hash/function recognition to Research Inspector.
+- Added published value-layout overlap detection so the inspector can distinguish a nearby marker from a selected run that actually intersects a documented value field.
+- Added verified paragraph/weapon ownership context for published Damage, Rate of Fire, Reload, Recoil, Ammo Capacity, Fire Pattern and Silencer records without changing confidence automatically.
+- Applied the recovered `deusex_md_invetory.xlsx` workbook research:
+  - `578E035D` = displayed Accuracy
+  - `0519EE4D` = displayed Damage/Lethality
+  - `652633EC` = displayed Rate of Fire
+  - `4801D357` = displayed Recoil
+  - `3EE6E864` = displayed Reload Speed
+  - `79D898E8` = base magazine capacity
+- Added the workbook-confirmed alternate inventory-height layout for `5FA99754`.
+- Preserved archive-version safety: Game.layer.0 workbook offsets are not copied into Steam/Game.layer.1 normal controls.
+- Named confirmed Base suppressor display mappings by actual weapon owner.
+- Expanded persistent research documentation and known-bad/contradictory research notes.
+- Removed the obsolete broken v0.7.11 retry workflow.
+- Java 21 build/lint and verified-layout regression checks pass before release.
 
-See CODE_AUDIT_v0.7.11.md for findings and remaining design debt.
+See **RESEARCH_SOURCES.txt** for the full research trail and **RESEARCH_RECONCILIATION.txt** for paragraph/row reconciliation details.
