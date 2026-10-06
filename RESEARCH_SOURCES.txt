@@ -1020,3 +1020,91 @@ from the Steam/Game.layer.1 examples: search around 00 06 00 00 00 00 00 rather 
 Treat this as platform/archive-variant structure evidence only. The 0E609B24 height marker
 is independently verified, but absolute offsets and surrounding constants are not assumed
 portable between Steam Game.layer.1 and Epic Game.layer.0.
+
+
+======================================================================
+34. HARDCORE REVIVAL 1.024 - NEW RESEARCH TARGET FAMILIES
+======================================================================
+Primary sources:
+https://www.nexusmods.com/deusexmankinddivided/mods/6
+https://www.nexusmods.com/deusexmankinddivided/mods/6?tab=posts
+https://www.nexusmods.com/deusexmankinddivided/mods/6?tab=videos
+https://www.moddb.com/downloads/mod-hardcore-divided-for-deus-ex-mankind-divided
+https://www.grognougnou.com/mankind-divided-mod-hardcore-revival.html
+
+Current public version:
+- Nexus shows version 1.24, last updated 2025-12-22.
+- The author consistently refers to this release in text as 1.024.
+
+The 1.024 release and its July 2026 author videos establish several additional editable
+systems that are not yet mapped to exact hashes in the project:
+
+NPC resistances / immunities:
+- Big robots and turrets are substantially more resistant to bullet damage, including
+  armor-piercing ammunition.
+- Viktor Marchenko is immune to normal Stun effects.
+- Exosuit characters are immune to Stun darts and Tranquilizer darts and require stronger
+  EMP effects.
+- Heavy augmented GARM characters with armor are more resistant to multiple damage types.
+- Daria Myska is more resistant to Stun, Tranquilizer, EMP and Gas effects.
+
+EMP / stun timing:
+- EMP ammunition stun time is heavily reduced.
+- The maximum accumulated stun time for electronic devices is documented as 8 seconds in
+  1.024 instead of 30 seconds in the prior/default behavior.
+- The Côte d'Azur Rifle, EMP grenades and EMP mines remain stronger EMP options.
+
+Mine / grenade behavior:
+- Mines are triggered from a greater distance, intended to behave closer to Deus Ex:
+  Human Revolution.
+- This is a separate future search target from weapon range.
+
+AI reaction behavior:
+- NPC reaction time remains very fast at close range.
+- At long range, detecting the player now causes an investigate/suspicious state first
+  rather than immediate hostility.
+- This suggests at least one distance- or state-dependent AI reaction parameter family.
+
+Experimental augmentation instability:
+- The author's 2026 video description says enabling certain experimental augmentations adds
+  100 to Jensen's instability stat.
+- Experimental upgrades add 50 to the same instability stat.
+- The 1.024 changelog specifically names Titan, Nanoblade, Icarus Dash and Focus as
+  augmentations whose unlock can increase instability during the main campaign.
+
+Weapon / augmentation changes in 1.024:
+- Base reload speed for all weapons was made slightly slower.
+- The regular 10mm Pistol firing pace was restored toward normal after being too fast.
+- Cloak, Titan and Focus energy costs were increased.
+- Praxis costs for several upgrades were adjusted.
+- XP rewards were reworked again.
+- The last-mission delegates-drink timer begins earlier.
+
+These are VERIFIED behavioral targets because they are stated and demonstrated by the mod
+author, but no exact hash/offset is assigned until a source or controlled binary comparison
+identifies the underlying bytes.
+
+Best future controlled comparison:
+1.024 vs archived 1.023-5 should be especially useful because the author lists the major
+families changed between those versions. It is not a single-variable comparison, but it is
+far narrower than comparing vanilla against the full Hardcore mod.
+
+======================================================================
+35. 2026 AUTHOR VIDEO BEHAVIOR CROSS-CHECK
+======================================================================
+Source:
+https://www.nexusmods.com/deusexmankinddivided/mods/6?tab=videos
+
+Grognougnou added three author videos dated 2026-07-14:
+- Adding Resistances and Immunity to Characters
+- Improved AI Reactions for NPCs
+- Increased Unstability Factor for Experimental Augs
+
+The public index gives useful behavior-level values:
+- some experimental augmentation unlocks add 100 instability;
+- experimental upgrades add 50 instability;
+- distant NPC detections can enter investigate behavior rather than immediate hostility;
+- robots and selected NPC classes use new resistance/immunity rules.
+
+The public index does not expose frame-level hex data or usable transcripts containing the
+underlying markers, so no new byte-level mapping is promoted from these videos yet.
