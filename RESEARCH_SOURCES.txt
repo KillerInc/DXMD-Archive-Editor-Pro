@@ -829,3 +829,29 @@ Therefore:
 - The publicly indexed web appears close to exhausted for exact DXMD Game.layer.1 hex
   dictionaries. Future gains are most likely from archived files, source packages,
   author attachments/guides, raw archive comparisons, or newly published community research.
+
+
+======================================================================
+26. VERIFIED PARAGRAPH RECONCILIATION
+======================================================================
+Repository artifacts:
+- research_reconcile.py
+- RESEARCH_RECONCILIATION.txt
+- src/main/java/VerifiedParagraphCatalog.java
+- .github/workflows/research-reconcile.yml
+
+The compressed Base research dataset was decoded and compared with published weapon
+paragraph starts. A naive fixed-size window was rejected because adjacent paragraphs can
+be close enough for ownership to bleed from one weapon into the next.
+
+Production ownership now stops at the next known paragraph and is capped locally.
+Explicitly unresolved paragraph starts are retained as null-owner boundaries.
+
+This context improves Research Inspector names/evidence only. Paragraph ownership does not
+by itself change CONFIRMED / STRONG_SUSPECTED / SUSPECTED / UNIDENTIFIED.
+
+Contradictions are preserved:
+- 6594112 was called Lancer Rifle Reload 2 in one list and unresolved in another, so it
+  remains unresolved in production ownership.
+- 6596928 was called Devastator Shotgun Reload 2 in one list and unresolved in another,
+  so it remains unresolved in production ownership.
