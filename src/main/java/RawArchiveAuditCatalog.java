@@ -152,7 +152,7 @@ final class RawArchiveAuditCatalog {
         long[] micro={112348L,113060L,113820L};
         for(int i=0;i<micro.length;i++) add("DLCPackTactical.layer.0.all.archive",micro[i],"0ACC4075",Level.CONFIRMED,
                 "Micro-Assembler Experimental/Overclock Gate ["+(i+1)+"/3]",
-                "The Micro-Assembler Overheat Fix documents exactly three 0ACC4075 markers changed to zero. Other changes in that archive are treated as inherited contamination.",false);
+                "The Micro-Assembler Overheat Fix explicitly identifies exactly three 0ACC4075 records as the Micro-Assembler Purchase, Upgrade Optimizer and Upgrade Maximizer tiers and replaces that marker for the fix. It separately identifies the similar blank DLC augmentation-template occurrence and leaves it unchanged.",false);
 
         add("DLCPackTactical.layer.0.all.archive",107324L,"32",Level.SUSPECTED,
                 "Unresolved Tactical Field (contaminated Micro-Assembler archive)",
