@@ -265,3 +265,7 @@ Referenced community mods remain the work of their respective authors. DXMD Arch
 ## Disclaimer
 
 DXMD Archive Editor Pro is a community tool and is not affiliated with or endorsed by Eidos-Montréal or Square Enix. Editing game archives can break an installation or save data. Keep backups when testing changes, especially newly identified or inventory-dimension fields.
+\n\n## RESEARCH SOURCES
+
+A persistent source-and-findings log is maintained in [RESEARCH_SOURCES.txt](RESEARCH_SOURCES.txt). It records external DXMD research already reviewed, verified function/hash meanings, controlled-mod comparisons, archive/toolchain references, applied corrections, and unresolved research targets so future audits do not repeat completed work.
+
