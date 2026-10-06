@@ -71,7 +71,7 @@ final class RawArchiveAuditCatalog {
         add(BASE,7413173L,"22C6ABC4",Level.CONFIRMED,"Takedown Power Consumption Control",
                 "Icarus Reflexes changes exactly this 4-byte control to 00000000 and documents removal of takedown power consumption. The raw value behaves like an internal control/identifier, not a numeric energy-cost value.",false);
         add(BASE,6577693L,"00000C42",Level.CONFIRMED,"Energy Auto-Regeneration Limit",
-                "Two isolated regeneration mods change this float from 35.0 to 100.0 / 193.0. IPOAO Full differs from normal IPOAO only at this same field. Grognougnou's verified DXMD tutorial independently identifies function 4C1BC5B1 as the player's automatic energy-regeneration amount.",false);
+                "Two isolated regeneration mods change this float from 35.0 to 100.0 / 193.0. IPOAO Full differs from normal IPOAO only at this same field. External hex-edit documentation gives the exact containing block for 4C1BC5B1 and independently confirms Float32 values 35.0 (vanilla), 100.0 and 193.0 for the automatic regeneration limit.",false);
         add(BASE,4570013L,"0000AA42",Level.CONFIRMED,"Biocell Energy Gain",
                 "Variety differs from NoHealthRegen only by this Biocell field and takedown cost; Variety B lowers it again from 42.5 to 28.0. Grognougnou's verified DXMD tutorial independently identifies function 72C142AA as Biocell energy recovery.",false);
         add(BASE,7413189L,"00000442",Level.CONFIRMED,"Takedown Energy Cost",
