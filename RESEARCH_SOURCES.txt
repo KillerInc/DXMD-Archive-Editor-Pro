@@ -732,3 +732,100 @@ Energy-use layouts:
 
 This second pass did not change the project's confidence methodology. Paragraph ownership is
 verified contextual identity; it does not automatically prove every nearby changed byte.
+
+
+======================================================================
+22. MICRO-ASSEMBLER OVERHEAT FIX - DIRECT EXPERIMENTAL-AUG STRUCTURE
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/42
+
+Author masterquigon documents direct comparison against Adam 2.0.
+
+Verified structure:
+- Base Game.layer.1 has ten experimental-augmentation hits:
+  0A CC 40 75 00 00 00 00 05
+- Tactical DLC has three Micro-Assembler tier records:
+  0A CC 40 75 00 00 00 00 0B
+  These are explicitly identified as:
+  1. Micro-Assembler Purchase
+  2. Upgrade Optimizer / Upgrade 1
+  3. Upgrade Maximizer / Upgrade 2
+- Tactical DLC also has:
+  0A CC 40 75 00 00 00 00 03
+  explicitly identified as a blank DLC augmentation template.
+- Replacing the 0A CC 40 75 marker in the three ...0B Micro-Assembler records removes
+  its experimental/overclock behavior; the ...03 template is intentionally left alone.
+
+Important qualification:
+The author also found 0A CC 40 75 in non-experimental DLC context (e.g. CHAFF), so the
+four-byte marker alone is not globally sufficient; the full surrounding record/context matters.
+
+This directly strengthens the project's existing confirmed 0ACC4075 Micro-Assembler and
+Base experimental-augmentation gate mappings.
+
+======================================================================
+23. ICARUS REFLEXES - TAKEDOWN ENERGY CROSS-CHECK
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/15
+
+The mod's documented purpose is to remove all takedown power consumption.
+A later Epic-version user reports locating the relevant record through 22C6ABC4 and changing
+the associated Float32 energy value; the Steam/source tutorial independently identifies
+22C6ABC4 as the unique takedown-energy function in Game.layer.1.
+
+This supports the existing confirmed takedown energy mapping, but platform/archive variants
+can differ in absolute file location and/or default numeric value. Do not overwrite the
+project's verified clean-archive baseline merely because an Epic/Game.layer.0 example differs.
+
+======================================================================
+24. PUBLIC LIGHTPOWER1 EDITOR PACKAGE - RETRIEVAL STATUS
+======================================================================
+Source page:
+https://www.moddb.com/games/deus-ex-mankind-divided/downloads/dxmd-archive-file-editor-tool
+
+Indexed metadata:
+- Filename: DXMD_Archive_Editv1.1.zip
+- Size: 97.35 KB / 99,683 bytes
+- MD5: 1d0f47ea6f399413bf6190f7d4339437
+- Updated August 2022.
+- Description confirms Java implementation and editing of XP, stacking and crafting costs.
+- Credits MohamedASalama and Grognougnou.
+
+The currently indexed ModDB mirror endpoint returned HTTP 410 Gone during the 2026-10-06
+research pass. No package/source was recovered from that route. The project already contains
+descended/ported editor logic, so this dead mirror is retained as provenance rather than
+treated as missing project functionality.
+
+======================================================================
+25. SEARCH SATURATION / NEGATIVE RESULTS
+======================================================================
+A second search cycle used newly verified identifiers as anchors, including:
+- 805717DE (takedown-distance block marker)
+- C62C8F77 (neighboring Chemical Resistance record identifier)
+- 292E5FAE
+- 4C1BC5B1
+- 2B4352B8
+- FA600225
+- 72365784
+- 6712F5D4
+- A1B89DD4
+- 5F317320
+- 585B7C22
+- 79D898E8
+- 8D0137A2
+
+Result:
+Publicly indexed searches overwhelmingly resolve back to Grognougnou, Master Inventory,
+Inventory Mod, Tweaks, Icarus Reflexes, More Energy Regeneration, masterquigon's 2025
+research, or derivative copies/descriptions. No independent public source was found that
+assigns a narrower verified meaning to C62C8F77 or 805717DE themselves.
+
+Therefore:
+- C62C8F77 remains contextual only; do not label the identifier itself.
+- 805717DE remains part of a verified takedown reach/distance block; do not assign a narrower
+  subfield name to the identifier without another source.
+- The publicly indexed web appears close to exhausted for exact DXMD Game.layer.1 hex
+  dictionaries. Future gains are most likely from archived files, source packages,
+  author attachments/guides, raw archive comparisons, or newly published community research.
