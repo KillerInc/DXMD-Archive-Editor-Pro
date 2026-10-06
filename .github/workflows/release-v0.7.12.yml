@@ -1,0 +1,137 @@
+name: Release v0.7.12 Research Integration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/release-v0.7.12.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build Java 21
+        run: bash build.sh
+
+      - name: Java 21 lint
+        shell: bash
+        run: |
+          rm -rf build/lint
+          mkdir -p build/lint
+          find src/main/java -name '*.java' -print0 | xargs -0 javac --release 21 -encoding UTF-8 -Xlint:all -d build/lint
+
+      - name: Run v0.7.12 research integration regressions
+        shell: bash
+        run: |
+          cat > build/V0712ResearchAudit.java <<'JAVA'
+          import java.nio.file.*;
+          import java.util.*;
+
+          public class V0712ResearchAudit {
+            static void check(boolean v,String m){ if(!v) throw new RuntimeException(m); }
+
+            public static void main(String[] args) throws Exception {
+              check(BaseResearchProfiles.get().fields.size()==2546,"Base row count");
+              int dlc=0;
+              for(String n:DLCProfiles.names()) dlc+=DLCProfiles.get(n).fields.size();
+              check(dlc==350,"DLC row count");
+
+              long[] newStacks={
+                4909661L,4920789L,4924701L,4927085L,4930765L,4932517L,4934509L,
+                5050405L,5051309L,5052261L,5053221L,5054125L,5055117L,
+                5709845L,5757237L,5757845L,5758453L,5851957L,5852685L,5853501L,
+                5864469L,5866069L,5866765L,5867429L,6617717L,7559005L
+              };
+              var baseMappings=RawArchiveAuditCatalog.mappingsFor("Game.layer.1.all.archive");
+              Set<Long> confirmedStacks=new HashSet<>();
+              for(var m:baseMappings)
+                if(m.level==RawArchiveAuditCatalog.Level.CONFIRMED && m.name.startsWith("Inventory Stack Amount"))
+                  confirmedStacks.add(m.offset);
+              for(long off:newStacks) check(confirmedStacks.contains(off),"Missing controlled stack mapping "+off);
+
+              byte[] b=new byte[256];
+              byte[] mag={(byte)0x79,(byte)0xD8,(byte)0x98,(byte)0xE8};
+              System.arraycopy(mag,0,b,20,4); b[36]=6;
+              byte[] alt={(byte)0xB4,(byte)0x25,(byte)0x47,(byte)0x25};
+              System.arraycopy(alt,0,b,80,4); b[96]=10;
+              byte[] acc={(byte)0x57,(byte)0x8E,(byte)0x03,(byte)0x5D};
+              System.arraycopy(acc,0,b,120,4); b[136]=20;
+              byte[] rof={(byte)0x65,(byte)0x26,(byte)0x33,(byte)0xEC};
+              System.arraycopy(rof,0,b,160,4); b[176]=11;
+              byte[] recoil={(byte)0x48,(byte)0x01,(byte)0xD3,(byte)0x57};
+              System.arraycopy(recoil,0,b,190,4); b[206]=30;
+              byte[] reload={(byte)0x3E,(byte)0xE6,(byte)0xE8,(byte)0x64};
+              System.arraycopy(reload,0,b,220,4); b[236]=50;
+
+              Path p=Files.createTempFile("dxmd-v0712",".bin");
+              Files.write(p,b);
+              check(VerifiedHexCatalog.evidenceNear(p.toFile(),36,1,64).contains("base magazine capacity"),"Magazine layout");
+              check(VerifiedHexCatalog.evidenceNear(p.toFile(),96,1,64).contains("alternate stack amount"),"B4254725 stack layout");
+              check(VerifiedHexCatalog.evidenceNear(p.toFile(),136,1,64).contains("display accuracy integer"),"Accuracy display layout");
+              check(VerifiedHexCatalog.evidenceNear(p.toFile(),176,1,64).contains("display rate-of-fire integer"),"ROF display layout");
+              check(VerifiedHexCatalog.evidenceNear(p.toFile(),206,1,64).contains("display recoil integer"),"Recoil display layout");
+              check(VerifiedHexCatalog.evidenceNear(p.toFile(),236,1,64).contains("display reload-speed integer"),"Reload display layout");
+              Files.deleteIfExists(p);
+
+              check(VerifiedParagraphCatalog.ownerFor(5020368L,"Damage")!=null,"Verified paragraph context");
+              System.out.println("v0.7.12 research integration audit OK");
+            }
+          }
+          JAVA
+          javac --release 21 -cp build/classes -d build/classes build/V0712ResearchAudit.java
+          java -Djava.awt.headless=true -cp build/classes V0712ResearchAudit
+          javap -verbose -classpath build/classes Launcher | grep -q 'major version: 65'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.12.jar | grep -q '^VerifiedHexCatalog.class$'
+          jar tf dist/DXMD-Archive-Editor-Pro-v0.7.12.jar | grep -q '^VerifiedParagraphCatalog.class$'
+
+      - name: Package ZIP and checksums
+        shell: bash
+        run: |
+          JAR='dist/DXMD-Archive-Editor-Pro-v0.7.12.jar'
+          HASH="$(sha256sum "$JAR" | awk '{print $1}')"
+          printf '%s  %s\n' "$HASH" 'DXMD-Archive-Editor-Pro-v0.7.12.jar' > dist/DXMD-Archive-Editor-Pro-v0.7.12.jar.sha256
+          rm -rf build/release-package
+          mkdir -p build/release-package
+          cp "$JAR" dist/DXMD-Archive-Editor-Pro-v0.7.12.jar.sha256 RELEASE_NOTES.md RESEARCH_SOURCES.txt RESEARCH_RECONCILIATION.txt build/release-package/
+          printf '%s\n'             'DXMD Archive Editor Pro v0.7.12'             'Java 21 or newer required.'             ''             'Windows verification:'             '  certutil -hashfile DXMD-Archive-Editor-Pro-v0.7.12.jar SHA256'             > build/release-package/VERIFY.txt
+          (cd build/release-package && zip -9 ../../dist/DXMD-Archive-Editor-Pro-v0.7.12.zip             DXMD-Archive-Editor-Pro-v0.7.12.jar             DXMD-Archive-Editor-Pro-v0.7.12.jar.sha256             VERIFY.txt RELEASE_NOTES.md RESEARCH_SOURCES.txt RESEARCH_RECONCILIATION.txt)
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.12.jar
+          sha256sum dist/DXMD-Archive-Editor-Pro-v0.7.12.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DXMD-Archive-Editor-Pro-v0.7.12
+          path: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.12.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.12.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.12.jar.sha256
+            RELEASE_NOTES.md
+            RESEARCH_SOURCES.txt
+            RESEARCH_RECONCILIATION.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.7.12
+          name: DXMD Archive Editor Pro v0.7.12
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/DXMD-Archive-Editor-Pro-v0.7.12.zip
+            dist/DXMD-Archive-Editor-Pro-v0.7.12.jar
+            dist/DXMD-Archive-Editor-Pro-v0.7.12.jar.sha256
+            RELEASE_NOTES.md
+            RESEARCH_SOURCES.txt
+            RESEARCH_RECONCILIATION.txt
