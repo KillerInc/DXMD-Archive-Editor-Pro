@@ -888,3 +888,44 @@ web path.
 Global web/GitHub searches using the newly verified hashes and paragraph offsets produced
 no additional trustworthy DXMD hash dictionary beyond the primary mod authors already
 documented here.
+
+
+======================================================================
+28. INVENTORY MARKER INDEPENDENT CROSS-CHECK
+======================================================================
+Source:
+https://www.nexusmods.com/deusexmankinddivided/mods/5
+
+TheMaestro55555's Inventory Mod documentation independently lists:
+- 8D0137A2 = beginning marker for item stack records.
+- 0E609B24 = item-height marker for some items.
+- 5FA99754 = alternate item-height marker for other items.
+- 8BB5F8E1 = item-width marker.
+- 8E6BC587 = weapon-width marker for non-pistol weapons.
+
+Its plain-text documentation also shows the surrounding record constants used while
+editing inventory data, reinforcing that these are structured record markers rather than
+isolated coincidental byte sequences.
+
+This independently supports the corresponding entries in VerifiedHexCatalog. It does not
+change the rule that a nearby marker alone cannot prove an arbitrary changed byte's role.
+
+======================================================================
+29. PUBLISHED VALUE-LAYOUT OVERLAP DETECTION
+======================================================================
+VerifiedHexCatalog now distinguishes:
+1. a verified marker merely being nearby; and
+2. the selected changed-byte run overlapping the exact value slot in a published record
+   layout.
+
+For layouts explicitly documented in the research sources, the known editable value begins
+at marker +16. Research Inspector can therefore report an explicit
+"SELECTED RUN OVERLAPS VERIFIED VALUE" message when the selected row intersects that value.
+
+No automatic confidence promotion was added. The existing project confidence methodology
+remains authoritative.
+
+A Java 21 regression test constructs a synthetic magazine-capacity record using marker
+79D898E8 and verifies that:
+- a row on marker+16 is detected as overlapping the verified value;
+- an unrelated nearby row is not falsely reported as overlapping.
