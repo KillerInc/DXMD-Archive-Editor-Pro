@@ -599,3 +599,136 @@ The author directs users to locate the RX Health Rebuilder region and compare th
 blocks and credits Grognougnou's work. The mod also has a documented praxis-cost side effect.
 No additional explicit hex->subfield mapping was recovered in this pass, so no project field
 was promoted from this source alone.
+
+
+======================================================================
+21. GROGNouGNOU MAIN TUTORIAL - EXHAUSTIVE SECOND PASS
+======================================================================
+Source:
+https://www.grognougnou.com/mods-tutorials-deus-ex-mankind-divided.html
+
+This second pass re-read the complete tutorial line-by-line and adds details that were
+only partially represented earlier.
+
+Direct record layouts / separators:
+- Base item width:
+  8B B5 F8 E1 00 00 00 00 17 00 00 00 00 00 00 00 [WIDTH LE32]
+- Base weapon/multitool width:
+  8E 6B C5 87 00 00 00 00 17 00 00 00 00 00 00 00 [WIDTH LE32]
+- DLC width records use 09 00 00 00 in the corresponding separator position.
+- Item height example:
+  0E 60 9B 24 00 00 00 00 17 00 00 00 00 00 00 00 [HEIGHT LE32]
+- Stack record:
+  8D 01 37 A2 00 00 00 00 0C 00 00 00 00 00 00 00 [STACK LE32]
+- Price example for 5.56mm ammo:
+  C8 E9 D6 EF 00 00 00 00 00 00 00 00 00 00 00 00 [UNIT PRICE LE32]
+  Price is per individual round/item, not necessarily per merchant box.
+- Blurred-vision duration:
+  4A 37 66 18 00 00 00 00 0A 00 00 00 00 00 00 00 [FLOAT32 duration]
+  Example vanilla-style value shown: 00 00 20 40.
+- Biocell energy:
+  72 C1 42 AA 00 00 00 00 0A 00 00 00 00 00 00 00 00 00 AA 42
+  The final Float32 is the energy recovered.
+- Crafting cost:
+  8B 65 87 35 00 00 00 00 0E 00 00 00 00 00 00 00 [COST LE32]
+  Example 64 00 00 00 = 100 spare parts.
+- 65000977 controls quantity of copies crafted at once.
+
+Weapon base/upgrade layouts:
+- Base magazine:
+  79 D8 98 E8 00 00 00 00 0C 00 00 00 00 00 00 00 [CAPACITY LE32]
+  DLC example uses 08 00 00 00 in the separator/record-type position.
+- Ammo-capacity bonus:
+  3D 96 AB 5F 00 00 00 00 0C 00 00 00 00 00 00 00 [CUMULATIVE BONUS LE32]
+- Upgrade level:
+  77 73 1D D6 00 00 00 00 1C 00 00 00 00 00 00 00 [LEVEL LE32]
+- Upgrade parts cost:
+  58 5B 7C 22 00 00 00 00 0E 00 00 00 00 00 00 00 [COST LE32]
+  Example 5E 01 00 00.
+- Base ROF shot timing example:
+  EA 10 ED F8 00 00 00 00 0A 00 00 00 00 00 00 00 [FLOAT32]
+- ROF bonus example:
+  72 36 57 84 00 00 00 00 0A 00 00 00 00 00 00 00 66 66 A6 3F
+- Range example:
+  A1 B8 9D D4 00 00 00 00 0A 00 00 00 00 00 00 00 00 00 90 42
+- Base reload example:
+  5F 31 73 20 00 00 00 00 0A 00 00 00 00 00 00 00 00 00 50 40
+- FA600225 = reload-speed bonus field inside RELOAD_SPEED records.
+- 2B4352B8 = functional damage bonus/malus in upgrade records, including SILENCER.
+- 0519EE4D = display-only damage modifier; it does not alter actual weapon power.
+
+Additional exact paragraph ownership recovered:
+Reload level 2:
+- Tactical Shotgun 6586576
+- Battle Rifle 6589184
+- Combat Rifle 6589872
+- Machine Pistol 6590928
+- Revolver 6593424
+- Stun Gun 6593808
+- Grenade Launcher 6594432
+- Tranquilizer Rifle 6595680
+- Cote d'Azur 6596304
+- Sniper Rifle 6596608
+Unresolved reload-2 paragraphs retained as unresolved:
+6594112, 6594736, 6595056, 6595360, 6595984, 6596928, 6597232.
+
+Additional known reload records:
+- Combat Rifle Tutorial Reload 1 = 6588064
+- Pistol Tutorial Reload 1 = 6593056
+- Pistol Tutorial Reload 2 = 6595056
+- Combat Rifle Tutorial Reload 2 = 6595360
+
+Recoil level 1:
+- Combat Rifle 6599744
+- Revolver 6559328
+- Tactical Shotgun 6557104
+- Tranquilizer Rifle 6560528
+- Battle Rifle 6561072
+- 10mm Pistol 6562128
+- Cote d'Azur 6563104
+- Grenade Launcher 6564272
+- Machine Pistol 6562608
+
+Recoil level 2:
+- Cote d'Azur 6569744
+- Combat Rifle 6572528
+- Combat Rifle Tutorial 6571104
+
+Damage paragraph ownership explicitly listed:
+Level 1:
+- Revolver 5022288
+- Machine Pistol 5020368
+- Battle Rifle 5023232
+- Sniper Rifle 5023712
+- Combat Rifle 5022768
+Level 2:
+- Revolver 5025152
+- Sniper Rifle 5025632
+- Combat Rifle 5024176
+- Battle Rifle 5027520
+- Machine Pistol 5027040
+Level 3:
+- Sniper Rifle 5027984
+- Machine Pistol 5028496
+- Revolver 5028896
+- Combat Rifle 5029312
+- Battle Rifle 5029712
+- Silencer paragraph 6769072 is explicitly listed by the source as weapon-owner UNKNOWN;
+  keep it unresolved.
+
+Energy-use layouts:
+- General augmentation energy amount:
+  37 9F 68 3F 00 00 00 00 0A 00 00 00 00 00 00 00 [FLOAT32]
+  Warning from source: 379F683F is also used for camera/FOV parameters; context is mandatory.
+- Takedown energy:
+  22 C6 AB C4 00 00 00 00 0A 00 00 00 00 00 00 00 00 00 C0 42
+  The source states 22C6ABC4 is unique in Game.layer.1 for takedown energy use.
+- Player automatic energy regeneration:
+  4C 1B C5 B1 00 00 00 00 0A 00 00 00 00 00 00 00 [FLOAT32]
+  Source examples:
+  00 00 0C 42 = vanilla 20% (1/5) automatic regeneration.
+  00 00 D2 42 = Hardcore example about 66.6% (2/3) automatic regeneration.
+  It also suggests higher test values for 80-100% tuning.
+
+This second pass did not change the project's confidence methodology. Paragraph ownership is
+verified contextual identity; it does not automatically prove every nearby changed byte.
