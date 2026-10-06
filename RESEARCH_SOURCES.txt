@@ -398,3 +398,204 @@ FUTURE RESEARCH TARGETS
 - Resolve reload bonus FA600225 rows per weapon/stage.
 - Identify exact values behind item price hashes not yet exposed as normal editor controls.
 - Continue separating display-only values from gameplay-functional values.
+
+
+======================================================================
+13. MASTER INVENTORY - DIRECT HEX/STRUCTURE GUIDE
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/37?tab=docs
+
+Verified direct information from the author's "How to Mod Yourself" documentation:
+- 8D0137A2 is the stack-size marker.
+- After that marker, following the documented zero/0C structure, is the editable stack amount.
+- Weapon grid width can be located by finding the weapon's *_CORE record and searching
+  backward for the current width beneath the weapon-width marker corresponding to 8E6BC587.
+- The author directly documents editing Game.layer.1 and relevant Enforcer/Tactical DLC archives.
+
+Documented example changes:
+- Sniper Rifle: 7x2 -> 3x2.
+- Tranquilizer Rifle: 7x2 -> 3x2.
+- Battle Rifle/Lancer Rifle: 6x2 -> 3x2.
+- Combat Rifle/Cote d'Azur/Tactical Shotgun/Devastator: 5x2 -> 3x2.
+- Machine Pistol: 4x2 -> 3x2.
+- Elite Tranquilizer Rifle: 7x2 -> 3x2.
+- Elite Combat Rifle: 5x2 -> 3x2.
+- Grenade Launcher ammunition: 2x2 -> 1x2.
+- Biocells/Hypostims/Multi-tools: 2x1 -> 1x1.
+- Example stack targets include Weapon Parts 5000, weapon ammo 400, GL ammo 200,
+  Multi-tools 200, Biocells/Hypostims/Painkillers/Neuropozyne 100 and augmentation ammo 100.
+
+This independently confirms the 8D0137A2 stack marker and the weapon-grid structure already
+known from Grognougnou.
+
+======================================================================
+14. ORIGINAL INVENTORY MOD - EARLY DIRECT HEX GUIDE
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/5
+
+The author explicitly identifies these markers:
+- 8D 01 37 A2 = beginning marker for item stack data.
+- 0E 60 9B 24 = height marker for some items, including 40mm grenades.
+- 5F A9 97 54 = alternate height marker, e.g. Multi-tool.
+- 8B B5 F8 E1 = item width marker for items such as Biocells, HypoStim, body-mod ammo
+  and weapon attachments.
+- 8E 6B C5 87 = weapon width marker.
+
+The guide also documents nearby record structure including 00 17 00 00-style separators
+and the 0C 00 00 00 sequence near stack values.
+
+Historical limitation:
+The author did not yet know weapon height or pistol width. Later research below resolves
+those items; do not attribute the later findings to this older source.
+
+======================================================================
+15. CONFIGURING INVENTORY AND WEAPONS - 2020 HEX GUIDE
+======================================================================
+URL:
+https://gamesok.ru/game/deus-ex-mankind-divided/file/deus-ex-mankind-divided-sonfiguring-inventory-and-weapons-108989/
+
+The article references a 58.5 KB workbook named deusex_md_invetory.xls containing
+offsets/hex blocks for:
+- weapon/item width and height,
+- stack amounts,
+- weapon accuracy,
+- damage,
+- magazine capacity,
+- rate of fire,
+- recoil,
+- reload speed.
+
+The workbook itself was not recoverable in this research pass, but the article publishes
+several exact blocks directly.
+
+Verified TRANQUILIZER_RIFLE_CORE weapon width block:
+8E 6B C5 87 00 00 00 00 17 00 00 00 00 00 00 00 07 00 00 00 00
+The editable width is 07 in this vanilla example.
+
+Verified RANGED_WEAPON_CORE pistol/revolver width blocks:
+8B B5 F8 E1 00 00 00 00 0A 00 00 00 00 00 00 00 03 00 00 00 00 00 00 00
+8B B5 F8 E1 00 00 00 00 08 00 00 00 00 00 00 00 03 00 00 00 00 00 00 00
+The editable width is 03.
+
+Verified RANGED_WEAPON_CORE weapon-height blocks:
+0E 60 9B 24 00 00 00 00 0A 00 00 00 00 00 00 00 02 00 00 00 00 00 00 00
+0E 60 9B 24 00 00 00 00 08 00 00 00 00 00 00 00 02 00 00 00 00 00 00 00
+The editable height is 02.
+
+Verified stack example:
+0A 00 -> E7 03 = decimal 10 -> 999.
+
+Important:
+This guide discusses Game.layer.0/version-specific offsets. The structural/hash mappings
+are useful, but absolute offsets must not be copied into current Game.layer.1 mappings
+without matching the current archive.
+
+======================================================================
+16. MORE ENERGY REGENERATION - EXACT BLOCK AND VALUES
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/24?tab=posts
+
+The author provides the exact automatic-energy regeneration block:
+4C 1B C5 B1 00 00 00 00 0A 00 00 00 00 00 00 00 00 00 0C 42
+
+Steam Game.layer.1 paragraph/block start:
+- decimal 6577680
+- hex 0x645E10
+
+Documented float values:
+- 00 00 0C 42 = 35.0, vanilla/default threshold.
+- 00 00 C8 42 = 100.0, documented half-battery target.
+- 00 00 41 43 = 193.0, documented full-battery target.
+- community documentation also identifies 00 00 82 42 = 65.0 for another battery level.
+
+This directly corroborates the project's confirmed Energy Auto-Regeneration Limit mapping
+at the float inside this block and independently ties it to 4C1BC5B1.
+
+======================================================================
+17. AUGMENTATION CONTINUOUS ENERGY-DRAIN MARKER
+======================================================================
+Sources:
+https://www.moddb.com/mods/deus-ex-mankind-divided-hardcore-revival
+https://www.nexusmods.com/deusexmankinddivided/mods/13?tab=posts
+
+Verified marker:
+29 2E 5F AE = augmentation continuous-energy-consumption/drain behavior marker for
+applicable augmentations.
+
+Verified flag behavior:
+- nearby 01 = augmentation drains energy gradually/continuously while used.
+- change that 01 to 00 = disable that continuous drain.
+
+The Tweaks author provides direct examples for:
+- Punch Through Wall,
+- Implanted Rebreather,
+- EMP Shielding.
+
+Grognougnou separately documents the same marker/flag behavior for applicable augmentation
+paragraphs, including multiple Cloak stages.
+
+This is a verified structural/behavior mapping. It is not yet attached to a specific current
+Research Inspector row because no current exact row match has been isolated in the Git dataset.
+
+======================================================================
+18. TAKEDOWN REACH / DISTANCE - EXACT VANILLA RESTORE DATA
+======================================================================
+Source:
+https://www.nexusmods.com/deusexmankinddivided/mods/6?tab=posts
+
+Grognougnou provides exact Game.layer.1 restore instructions for takedown reach/distance.
+
+Block at decimal 7413264 / hex 0x711E10:
+Hardcore:
+80 57 17 DE 00 00 00 00 0A 00 00 00 00 00 00 00 00 00 80 3F
+Vanilla restore:
+80 57 17 DE 00 00 00 00 0A 00 00 00 00 00 00 00 00 00 A0 42
+
+Second block at decimal 7413424 / hex 0x711EB0:
+Hardcore:
+00 00 00 00 00 00 00 40 40 00 00 40 40 00 00 60 40 00 00 40 40 66 66 66 3F 00 00 C8 41 00 00 00
+Vanilla:
+00 00 00 00 00 00 00 40 40 00 00 40 40 00 00 34 43 00 00 40 40 00 00 00 40 00 00 C8 41 00 00 00
+
+These blocks are verified as takedown reach/distance-related restoration data.
+Individual sub-floats inside the second block are not separately named by the source, so
+the project should not assign narrower semantics without additional evidence.
+
+======================================================================
+19. HARDCORE REVIVAL TUTORIAL VIDEO INDEX
+======================================================================
+Source page:
+https://www.nexusmods.com/deusexmankinddivided/mods/6
+
+The author's tutorial list provides direct research targets:
+- XP: https://www.youtube.com/watch?v=sOTc8nemrU4
+- Finding items: https://www.youtube.com/watch?v=cHmx6EPs_oI
+- Inventory cells: https://www.youtube.com/watch?v=CTBF70ZuZO0
+- Stack sizes: https://www.youtube.com/watch?v=Ek-QSE6SYOY
+- Prices: https://www.youtube.com/watch?v=oRMKfGR1cto
+- Consumables/beverages: https://www.youtube.com/watch?v=s0oaRsJouss
+- Base ammo count: https://www.youtube.com/watch?v=A5GWwsyYZsQ
+- Visual weapon stats: https://www.youtube.com/watch?v=hCxKJ3Q9Ruc
+- Ammo-capacity upgrades: https://www.youtube.com/watch?v=FKdTAWYvgPc
+- Crafting/Micro-Assembler: https://www.youtube.com/watch?v=kYQgw7P5cPs
+- Praxis costs: https://www.youtube.com/watch?v=LiLrseZcgNw
+- Augmentation default state: https://www.youtube.com/watch?v=sdCERq6Pdwc
+- Takedown energy: https://www.youtube.com/watch?v=grRg0wYRnow
+
+The currently accessible web metadata exposes titles but not usable transcripts. Do not
+claim unseen frame-level hex from these videos. Their subjects corroborate the written
+tutorials and remain targets if captions or archived transcripts become accessible.
+
+======================================================================
+20. HEALTH REGENERATION MOD - CHECKED, NO NEW DIRECT HEX
+======================================================================
+URL:
+https://www.nexusmods.com/deusexmankinddivided/mods/44
+
+The author directs users to locate the RX Health Rebuilder region and compare the Base/mod
+blocks and credits Grognougnou's work. The mod also has a documented praxis-cost side effect.
+No additional explicit hex->subfield mapping was recovered in this pass, so no project field
+was promoted from this source alone.
