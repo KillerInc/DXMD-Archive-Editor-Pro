@@ -295,12 +295,14 @@ Boundary-safe verified paragraph ownership reconciliation
         4431589 +213 Raw field #139 orig=C8 changed=Hardcore Normal,Hardcore Optional
         4431685 +309 Raw field #140 orig=C800 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
 
-[Ammo Capacity] Stun Gun L1 4431792..4432448
+[Ammo Capacity] Stun Gun L1 4431792..4432112
         4431869 +77 Raw field #141 orig=03 changed=Hardcore Normal,Hardcore Optional
         4431965 +173 Raw field #142 orig=64 changed=Hardcore Normal,Hardcore Optional
         4432061 +269 Raw field #143 orig=6400 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
-        4432213 +421 Raw field #144 orig=07 changed=Hardcore Normal,Hardcore Optional
-        4432381 +589 Raw field #145 orig=41 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
+
+[Ammo Capacity] Pistol Tutorial L1 4432112..4432448
+        4432213 +101 Raw field #144 orig=07 changed=Hardcore Normal,Hardcore Optional
+        4432381 +269 Raw field #145 orig=41 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
 
 [Ammo Capacity] Tranquilizer Rifle L2 4432448..4433184
         4432469 +21 Raw field #146 orig=04 changed=Hardcore Normal,Hardcore Optional
@@ -346,12 +348,14 @@ Boundary-safe verified paragraph ownership reconciliation
         5665581 +125 Auto #2 orig=96 changed=Hardcore Normal,Hardcore Optional
         5665677 +221 Auto #3 orig=9600 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
 
-[Fire Pattern] Combat Rifle Semi Auto 5665760..5666576
+[Fire Pattern] Combat Rifle Semi Auto 5665760..5666064
         5665885 +125 Auto #4 orig=96 changed=Hardcore Normal,Hardcore Optional
         5665981 +221 Raw field #591 orig=9600 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
-        5666261 +501 Raw field #592 orig=5E01 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
-        5666469 +709 Burst orig=96 changed=Hardcore Normal,Hardcore Optional
-        5666517 +757 Burst #2 orig=9600 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
+
+[Fire Pattern] Pistol Tutorial Full Auto 5666064..5666576
+        5666261 +197 Raw field #592 orig=5E01 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
+        5666469 +405 Burst orig=96 changed=Hardcore Normal,Hardcore Optional
+        5666517 +453 Burst #2 orig=9600 changed=Hardcore Normal,Hardcore Optional,Adam 3.0
 
 [Fire Pattern] Tactical Shotgun Burst 5666576..5667344
         5666677 +101 Burst #3 orig=5E01 changed=Hardcore Normal,Hardcore Optional
@@ -912,13 +916,17 @@ Boundary-safe verified paragraph ownership reconciliation
         6588989 +189 Raw field #752 orig=0A changed=Hardcore Normal,Hardcore Optional
         6589085 +285 Raw field #753 orig=CDCCCCBE changed=Hardcore Normal,Hardcore Optional
 
-[Reload Speed] Battle Rifle L2 6589184..6589872
+[Reload Speed] Battle Rifle L2 6589184..6589552
         6589365 +181 Raw field #754 orig=1E changed=Hardcore Normal,Hardcore Optional
-        6589677 +493 Raw field #755 orig=0A changed=Hardcore Normal,Hardcore Optional
 
-[Reload Speed] Combat Rifle L2 6589872..6590560
+[Reload Speed] UNKNOWN 6589552..6589872
+        6589677 +125 Raw field #755 orig=0A changed=Hardcore Normal,Hardcore Optional
+
+[Reload Speed] Combat Rifle L2 6589872..6590240
         6590053 +181 Raw field #756 orig=14 changed=Hardcore Normal,Hardcore Optional
-        6590365 +493 Raw field #757 orig=0A changed=Hardcore Normal,Hardcore Optional
+
+[Reload Speed] Cote d'Azur L1 6590240..6590560
+        6590365 +125 Raw field #757 orig=0A changed=Hardcore Normal,Hardcore Optional
 
 [Reload Speed] Stun Gun L1 6590560..6590928
         6590741 +181 Raw field #758 orig=0F changed=Hardcore Normal,Hardcore Optional
@@ -927,9 +935,11 @@ Boundary-safe verified paragraph ownership reconciliation
 [Reload Speed] Machine Pistol L2 6590928..6591568
         6591117 +189 Raw field #760 orig=14 changed=Hardcore Normal,Hardcore Optional
 
-[Reload Speed] Sniper Rifle L1 6591568..6592304
+[Reload Speed] Sniper Rifle L1 6591568..6591920
         6591831 +263 Raw field #761 orig=80BF changed=Hardcore Normal,Hardcore Optional
-        6592109 +541 Raw field #762 orig=08 changed=Hardcore Normal,Hardcore Optional
+
+[Reload Speed] UNKNOWN 6591920..6592304
+        6592109 +189 Raw field #762 orig=08 changed=Hardcore Normal,Hardcore Optional
 
 [Reload Speed] Machine Pistol L1 6592304..6592672
         6592485 +181 Raw field #763 orig=0A changed=Hardcore Normal,Hardcore Optional
@@ -979,7 +989,7 @@ Boundary-safe verified paragraph ownership reconciliation
         6596733 +125 Raw field #781 orig=0A changed=Hardcore Normal,Hardcore Optional
         6596829 +221 Raw field #782 orig=000000C0 changed=Hardcore Normal,Hardcore Optional
 
-[Reload Speed] Devastator Shotgun L2 6596928..6597232
+[Reload Speed] UNKNOWN 6596928..6597232
         6597045 +117 Raw field #783 orig=0A changed=Hardcore Normal,Hardcore Optional
         6597141 +213 Raw field #784 orig=CDCC4C changed=Hardcore Normal,Hardcore Optional
 
