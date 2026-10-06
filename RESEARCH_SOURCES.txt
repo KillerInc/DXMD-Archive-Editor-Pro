@@ -1271,3 +1271,139 @@ Portable mapping added:
 
 No DLC stack mappings are inferred from this comparison because the five DLC archives are
 exactly identical between the Normal and Optional packages.
+
+
+======================================================================
+39. HARDCORE REVIVAL 1.024 NORMAL VS OPTIONAL - LOCAL CONTROLLED DIFF
+======================================================================
+Library source files:
+- Deus Ex Mankind Divided MOD Hardcore Revival-6-1-24-1766439456.7z
+- DXMD MOD Hardcore Revival (Optional Version)-6-1-24-1766439705.7z
+
+The user-provided offline py7zr skill was used to extract both original 7z packages directly.
+The clean OG archive set in the Library was used as the baseline.
+
+Archive size checks:
+- Game.layer.1.all.archive: 16,986,849 bytes in OG, Normal and Optional.
+- Assault DLC: 942,225 bytes in all three sets.
+- Enforcer DLC: 43,902,707 bytes.
+- Intruder DLC: 63,927,966 bytes.
+- Tactical DLC: 1,144,680 bytes.
+- Classic DLC: 169,288,884 bytes.
+
+Controlled comparison result:
+- All five DLC archives are byte-identical between Hardcore 1.024 Normal and Optional.
+- Base Game.layer.1 differs by exactly 83 bytes across 60 contiguous changed runs.
+- Every one of the 60 runs lands exactly at marker+16 of a stack record.
+- 53 use verified marker 8D0137A2.
+- 7 use alternate stack marker B4254725.
+- Optional values are consistently 500 for ammunition records or 50 for item records,
+  matching the author's documented Optional-version difference.
+
+This validates B4254725 as an alternate stack-amount record marker and independently confirms
+all 60 stack-value locations.
+
+The controlled comparison also exposed an earlier project-data error:
+26 newly confirmed stack rows had been stored in RawArchiveAuditCatalog with Hardcore-Normal
+bytes instead of clean OG bytes. v0.7.13 corrects those originals from the clean archive.
+
+Named identities recovered directly from nearby clean-archive text include:
+- alcohol: ABSINTHE_TENSONS_SENSE, Goldtooth_Whiskey,
+  WINE_LAVENDE_DE_MACHINISTE, SPIRITS_AKUMA_SHOCHU,
+  WHISKEY_SURLY_WELSHMANS, SPIRITS_OLD_MANS_PRESTIGE, WHISKEY_NYES_RYE
+- 10mm EMP, 12gauge EMP, 5.56mm EMP, 9mm EMP and Revolver EMP ammunition
+- GRENADE_LAUNCHER_FRAG_GRENADE / EMP / GAS / CONCUSSION
+- PEPS_AMMO, TESLA_AMMO, NANOBLADE_AMMO, TYPHOON_AMMO
+- NEUROPOZYNE
+- GYROSCOPIC_REGULATOR, HYDRAULIC_MICROPUMP, STEM_PROCESSOR_CHIP
+
+Two B4254725 EMP-ammo records remain caliber-unresolved. They are confirmed stack fields,
+but v0.7.13 does not assign a guessed caliber to them.
+
+Normal editor additions from this comparison:
+- EMP Ammo Stack
+- Grenade Launcher Payload Stack
+- PEPS Ammo Stack
+- Augmentation Ammo Stack (TESLA / Nanoblade / Typhoon)
+- Alcohol Stack
+- Neuropozyne Stack
+- Crafting Component Stack
+
+======================================================================
+40. CLEAN OG VERIFIED-HASH SCAN
+======================================================================
+The clean Library archive set was scanned for the complete VerifiedHexCatalog marker set.
+
+Verified marker occurrences found:
+- Base Game.layer.1: 4,587
+- Assault DLC: 80
+- Classic DLC: 79
+- Enforcer DLC: 103
+- Intruder DLC: 92
+- Tactical DLC: 77
+- Total: 5,018
+
+This scan is used as the Steam/DLC offset baseline for research. Published layouts are decoded
+at their documented value position (normally marker+16); marker-only identifiers remain
+context evidence and are not assigned a made-up value location.
+
+======================================================================
+41. GAME.LAYER.0 WORKBOOK -> STEAM GAME.LAYER.1 FUNCTIONAL TRANSLATION
+======================================================================
+The recovered workbook's absolute offsets belong to Game.layer.0, but its portable hashes
+also occur in clean Steam Game.layer.1 records.
+
+Using clean Game.layer.1 plus readable *_CORE ownership, exact Steam functional fields were
+resolved for 15 named weapons:
+
+Base magazine capacity:
+79D898E8 +16
+
+Weapon range:
+A1B89DD4 +16
+
+Base reload timing:
+5F317320 +16
+
+Named records resolved:
+- Combat Rifle
+- Tranquilizer Rifle
+- Machine Pistol
+- 10mm Pistol
+- Battle Rifle
+- Stun Pistol
+- Grenade Launcher
+- Revolver
+- Cote d'Azur Rifle
+- Heavy Rifle
+- Lancer Rifle
+- Otar Revolver
+- Devastator Shotgun
+- Tactical Shotgun
+- Sniper Rifle
+
+The resulting 45 named Steam controls were validated byte-for-byte against the clean OG
+archive before being added to BaseOptionCatalog.
+
+Display-only workbook fields remain research evidence rather than gameplay controls:
+- 578E035D displayed Accuracy
+- 0519EE4D displayed Damage/Lethality
+- 652633EC displayed Rate of Fire
+- 4801D357 displayed Recoil
+- 3EE6E864 displayed Reload Speed
+
+Functional ROF components EA10EDF8, F8861A4C and D42EB87C are recognized but are not exposed
+as a single normal "Rate of Fire" control because the exact relationship among the multiple
+components is not yet sufficiently isolated.
+
+======================================================================
+42. V0.7.13 CLEAN-ARCHIVE VALIDATION
+======================================================================
+Before release, 71 newly added/corrected offsets were checked directly against the clean
+Game.layer.1 archive:
+- 15 magazine defaults
+- 15 weapon-range Float32 values
+- 15 base-reload Float32 values
+- 26 newly named controlled stack values
+
+Result: 71 / 71 matched the expected clean OG value exactly.
