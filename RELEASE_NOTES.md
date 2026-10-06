@@ -1,22 +1,26 @@
-# DXMD Archive Editor Pro v0.7.12
+# DXMD Archive Editor Pro v0.7.13
 
-## Research integration release
+## Controlled archive research + functional weapon controls
 
-- Added verified runtime hash/function recognition to Research Inspector.
-- Added published value-layout overlap detection so the inspector can distinguish a nearby marker from a selected run that actually intersects a documented value field.
-- Added verified paragraph/weapon ownership context for published Damage, Rate of Fire, Reload, Recoil, Ammo Capacity, Fire Pattern and Silencer records without changing confidence automatically.
-- Applied the recovered `deusex_md_invetory.xlsx` workbook research:
-  - `578E035D` = displayed Accuracy
-  - `0519EE4D` = displayed Damage/Lethality
-  - `652633EC` = displayed Rate of Fire
-  - `4801D357` = displayed Recoil
-  - `3EE6E864` = displayed Reload Speed
-  - `79D898E8` = base magazine capacity
-- Added the workbook-confirmed alternate inventory-height layout for `5FA99754`.
-- Preserved archive-version safety: Game.layer.0 workbook offsets are not copied into Steam/Game.layer.1 normal controls.
-- Named confirmed Base suppressor display mappings by actual weapon owner.
-- Expanded persistent research documentation and known-bad/contradictory research notes.
-- Removed the obsolete broken v0.7.11 retry workflow.
-- Java 21 build/lint and verified-layout regression checks pass before release.
+- Extracted and compared the original Hardcore Revival 1.024 Normal and Optional 7z packages from the project Library.
+- Verified that all five DLC archives are byte-identical between Normal and Optional.
+- Base Game.layer.1 differs by exactly **83 bytes across 60 stack-value runs**.
+- Confirmed every changed run at a verified stack marker +16:
+  - 53 × `8D0137A2`
+  - 7 × `B4254725`
+- Corrected 26 previously stored controlled-stack originals from Hardcore-Normal bytes to their true clean-OG values.
+- Replaced generic controlled stack labels with real item names where the clean archive exposes them.
+- Added normal controls for:
+  - EMP ammunition stacks
+  - grenade-launcher payload stacks
+  - PEPS / TESLA / Nanoblade / Typhoon ammo stacks
+  - alcohol stacks
+  - Neuropozyne stack
+  - Gyroscopic Regulator / Hydraulic Micropump / Stem Processor Chip stacks
+- Translated the workbook/tutorial functional hashes into clean Steam Game.layer.1 offsets.
+- Added verified base **Magazine**, **Range**, and **Reload Timing** controls for 15 named weapons.
+- Validated all 71 newly added/corrected offsets directly against the clean OG archive.
+- Kept display-only Accuracy/Damage/ROF/Recoil/Reload values research-only.
+- Preserved the existing Confirmed / Strong Suspected / Suspected / Unidentified methodology.
 
-See **RESEARCH_SOURCES.txt** for the full research trail and **RESEARCH_RECONCILIATION.txt** for paragraph/row reconciliation details.
+The release ZIP contains only the JAR.
