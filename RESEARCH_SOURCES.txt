@@ -1162,3 +1162,59 @@ record structure.
 Research rule reinforced:
 A source can be trusted for an explicit hex-to-field identification without requiring every
 unrelated technical claim by that source to be adopted when stronger evidence contradicts it.
+
+
+======================================================================
+38. RECOVERED DEUSEX_MD_INVETORY.XLSX WORKBOOK
+======================================================================
+Source:
+User-supplied copy of the publicly referenced 2020 deusex_md_invetory workbook.
+
+Workbook SHA-256:
+8baf8e12e68fd5674138169627134841b002c44af18c0b01b2590c9a18ca7fd1
+
+Workbook sheets:
+- Оружие (Weapons)
+- Количество в пачках (Stack quantities)
+- Ширина пачек (Stack/item widths)
+- Параметры оружия (Weapon parameters)
+- Инвентарь (Inventory)
+
+Recorded archive baseline:
+- Game.layer.0.all.archive
+- MD5 c71c34d87d77ae2f3d3d36fe72095e37
+
+IMPORTANT:
+Absolute offsets in this workbook are Game.layer.0-specific. They are not copied into the
+current Steam/Game.layer.1 normal-control catalog. The portable hash/record layouts are used.
+
+Verified STUN_PISTOL_CORE display-stat records:
+- 578E035D = displayed weapon Accuracy. Example value 20.
+- 0519EE4D = displayed weapon Damage / lethality. Example value 15.
+- 652633EC = displayed weapon Rate of Fire. Example value 11.
+- 4801D357 = displayed weapon Recoil. Example value 30.
+- 3EE6E864 = displayed weapon Reload Speed. Example value 50.
+- 79D898E8 = base magazine capacity. Example value 5.
+
+For all six records above, the workbook shows a structured 24-byte record and the editable
+integer begins at marker +16.
+
+Additional portable structure verified by workbook:
+- 8E6BC587 = weapon inventory width, value at marker +16.
+- 8BB5F8E1 = item / ranged-weapon width, value at marker +16.
+- 0E609B24 = inventory height, value at marker +16.
+- 5FA99754 = alternate inventory height, value at marker +16.
+- 8D0137A2 = stack amount record. The workbook contains numerous direct examples with values
+  such as 200 ammunition, 10 40mm rounds, and 25 consumables.
+
+The workbook independently corroborates the distinction between visual weapon stat records
+and functional weapon behavior/stat records documented by Grognougnou. In particular,
+0519EE4D is a display/lethality number and must not be treated as the actual damage engine
+parameter.
+
+Applied in v0.7.12:
+- Added 578E035D, 652633EC, 4801D357 and 3EE6E864 to VerifiedHexCatalog.
+- Added exact marker+16 value layouts for all workbook-labeled display stats.
+- Added marker+16 layout for alternate height 5FA99754.
+- Kept all workbook absolute offsets out of BaseOptionCatalog because they target
+  Game.layer.0 rather than the current Steam Game.layer.1 archive.
