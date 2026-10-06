@@ -10,7 +10,8 @@ import java.util.*;
 final class VerifiedHexCatalog {
     record Hit(long offset, String hex, String meaning) {}
 
-    private record Marker(byte[] bytes, String hex, String meaning) {}\n    private record Layout(String hex, int valueDelta, int valueWidth, String valueMeaning) {}
+    private record Marker(byte[] bytes, String hex, String meaning) {}
+    private record Layout(String hex, int valueDelta, int valueWidth, String valueMeaning) {}
 
     private static final Marker[] MARKERS = {
         m("8BB5F8E1","Item inventory width"),
@@ -120,7 +121,9 @@ final class VerifiedHexCatalog {
         return out;
     }
 
-    static String evidenceNear(File file,long center,int radius){ return evidenceNear(file,center,1,radius); }\n\n    static String evidenceNear(File file,long center,int rowLength,int radius){
+    static String evidenceNear(File file,long center,int radius){ return evidenceNear(file,center,1,radius); }
+
+    static String evidenceNear(File file,long center,int rowLength,int radius){
         List<Hit> hits=findNear(file,center,radius);
         if(hits.isEmpty()) return "";
         StringBuilder s=new StringBuilder();
