@@ -971,3 +971,52 @@ used by the written research, including:
 The available indexed YouTube pages do not expose hex-edit frames or transcripts containing
 additional byte mappings, so these videos are useful behavioral corroboration but did not
 produce a new exact "hex = stat" mapping in this pass.
+
+
+======================================================================
+32. HARDCORE REVIVAL 1.024 CONTROLLED STACK-COMPARISON OPPORTUNITY
+======================================================================
+Primary sources:
+https://www.moddb.com/downloads/mod-hardcore-divided-for-deus-ex-mankind-divided
+https://www.moddb.com/downloads/mod-hardcore-revival-for-deus-ex-mankind-divided-optional
+
+Grognougnou explicitly states that the OPTIONAL 1.024 package is identical to the normal
+1.024 package except that ammunition stacks are changed to 500 and items to 50.
+
+That makes normal-vs-optional a particularly strong future controlled comparison:
+matching archive-byte differences should isolate stack behavior far more cleanly than the
+older multi-feature Hardcore comparisons.
+
+Package metadata recorded during this pass:
+Normal:
+- HARDCORE-REVIVAL-MOD-1024-DXMD-bigger-weapons.1.7z
+- 87,677,267 bytes
+- MD5 793443e5cfb5c1439d411fc41a1a6cad
+Optional:
+- HARDCORE-REVIVAL-MOD-1024-DXMD-smaller-weapons.7z
+- 87,677,989 bytes
+- MD5 ade6d07f1a8001434749f389e835d5dd
+
+A temporary GitHub Actions comparison workflow was attempted but ModDB returned HTTP 403
+for both its download-start URL and resolved mirror endpoint when requested from a GitHub
+hosted runner. The failing research-only workflow was removed instead of leaving a noisy
+permanent failure in the repository.
+
+If these two packages are later supplied locally, they should be compared byte-for-byte
+before any other broad mod comparison because the author's documented single-variable
+difference makes them unusually valuable evidence.
+
+======================================================================
+33. EPIC / GAME.LAYER.0 AMMO-HEIGHT VARIANT NOTE
+======================================================================
+Source:
+https://www.moddb.com/mods/deus-ex-mankind-divided-hardcore-revival
+
+A 2024 community note reports that on Game.layer.0.all.archive, ammo height can still be
+located with verified marker 0E609B24, but the surrounding record discriminator differs
+from the Steam/Game.layer.1 examples: search around 00 06 00 00 00 00 00 rather than the
+00 17 00 00... pattern used by the older Base tutorial.
+
+Treat this as platform/archive-variant structure evidence only. The 0E609B24 height marker
+is independently verified, but absolute offsets and surrounding constants are not assumed
+portable between Steam Game.layer.1 and Epic Game.layer.0.
