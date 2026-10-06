@@ -1,0 +1,126 @@
+name: Hardcore 1.024 Stack Diff Research
+
+on:
+  push:
+    paths:
+      - '.github/workflows/hardcore-stack-diff.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download official normal and optional Hardcore Revival 1.024 packages
+        shell: bash
+        run: |
+          mkdir -p build/hardcore-diff/normal build/hardcore-diff/optional
+          curl -fL --retry 3 -A 'Mozilla/5.0'             'https://www.moddb.com/downloads/start/143725'             -o build/hardcore-diff/normal.7z
+          curl -fL --retry 3 -A 'Mozilla/5.0'             'https://www.moddb.com/downloads/start/216491'             -o build/hardcore-diff/optional.7z
+          ls -lh build/hardcore-diff/*.7z
+
+      - name: Extract packages
+        shell: bash
+        run: |
+          7z x -y build/hardcore-diff/normal.7z -obuild/hardcore-diff/normal >/dev/null
+          7z x -y build/hardcore-diff/optional.7z -obuild/hardcore-diff/optional >/dev/null
+          echo "Normal archives:"
+          find build/hardcore-diff/normal -type f -iname '*.archive' -printf '%f\n' | sort
+          echo "Optional archives:"
+          find build/hardcore-diff/optional -type f -iname '*.archive' -printf '%f\n' | sort
+
+      - name: Compare matching archive files
+        shell: python
+        run: |
+          from pathlib import Path
+          import hashlib
+
+          root=Path("build/hardcore-diff")
+          normal={}
+          optional={}
+          for p in (root/"normal").rglob("*.archive"):
+              normal.setdefault(p.name,[]).append(p)
+          for p in (root/"optional").rglob("*.archive"):
+              optional.setdefault(p.name,[]).append(p)
+
+          out=[]
+          out.append("HARDCORE REVIVAL 1.024 NORMAL vs OPTIONAL STACK-ONLY DIFF")
+          out.append("Sources:")
+          out.append("Normal: https://www.moddb.com/downloads/start/143725")
+          out.append("Optional: https://www.moddb.com/downloads/start/216491")
+          out.append("")
+          out.append("Source statement: optional is identical to normal except ammo stacks become 500 and items become 50.")
+          out.append("Therefore matching archive-byte differences are strong controlled stack evidence.")
+          out.append("")
+          total_runs=0
+          total_bytes=0
+
+          def sha(p):
+              h=hashlib.sha256()
+              with p.open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
+              return h.hexdigest()
+
+          for name in sorted(set(normal)&set(optional)):
+              if len(normal[name])!=1 or len(optional[name])!=1:
+                  out.append(f"[SKIP ambiguous basename] {name}")
+                  continue
+              a=normal[name][0].read_bytes()
+              b=optional[name][0].read_bytes()
+              if len(a)!=len(b):
+                  out.append(f"[{name}] SIZE MISMATCH normal={len(a)} optional={len(b)}")
+                  continue
+              diffs=[i for i,(x,y) in enumerate(zip(a,b)) if x!=y]
+              if not diffs:
+                  continue
+              runs=[]
+              start=prev=diffs[0]
+              for i in diffs[1:]:
+                  if i==prev+1:
+                      prev=i
+                  else:
+                      runs.append((start,prev+1))
+                      start=prev=i
+              runs.append((start,prev+1))
+              total_runs+=len(runs); total_bytes+=len(diffs)
+              out.append("="*72)
+              out.append(f"[{name}] size={len(a)} changed_bytes={len(diffs)} runs={len(runs)}")
+              out.append(f"normal_sha256={sha(normal[name][0])}")
+              out.append(f"optional_sha256={sha(optional[name][0])}")
+              for lo,hi in runs:
+                  # include modest context to expose nearby marker hashes
+                  c0=max(0,lo-32); c1=min(len(a),hi+32)
+                  old=a[lo:hi].hex().upper()
+                  new=b[lo:hi].hex().upper()
+                  before=a[c0:lo].hex().upper()
+                  after=a[hi:c1].hex().upper()
+                  out.append(f"offset={lo} (0x{lo:X}) len={hi-lo} normal={old} optional={new}")
+                  out.append(f"  context_before[{lo-c0}]={before}")
+                  out.append(f"  context_after[{c1-hi}]={after}")
+              out.append("")
+
+          only_n=sorted(set(normal)-set(optional))
+          only_o=sorted(set(optional)-set(normal))
+          out.append("="*72)
+          out.append(f"SUMMARY matching_changed_runs={total_runs} changed_bytes={total_bytes}")
+          out.append(f"only_normal={','.join(only_n) if only_n else '-'}")
+          out.append(f"only_optional={','.join(only_o) if only_o else '-'}")
+          Path("HARDCORE_1024_STACK_DIFF.txt").write_text("\n".join(out)+"\n")
+          print("\n".join(out[-120:]))
+
+      - name: Commit research report
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add HARDCORE_1024_STACK_DIFF.txt
+          if git diff --cached --quiet; then
+            echo "No report changes."
+            exit 0
+          fi
+          git commit -m "Add controlled Hardcore 1.024 stack diff research"
+          git push
