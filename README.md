@@ -2,7 +2,7 @@
 
 A Java/Swing archive-value editor and reverse-engineering tool for **Deus Ex: Mankind Divided**.
 
-> **Current version:** v0.7.12  
+> **Current version:** v0.7.13  
 > **Runtime:** Java 21 or newer  
 > **Primary platform:** Windows
 
@@ -48,6 +48,16 @@ The previous runtime **Weapon Reference** tab is also removed. DXMD weapon wiki 
 ## v0.7.3 tab readability fix
 
 v0.7.3 fixes dark/black text that could remain on top-level tabs under Nimbus. The theme now supplies explicit Nimbus text colors for enabled, selected, focused, hover and pressed tab states, and also forces per-tab foreground/background colors at runtime. Selected tabs use white text; inactive tabs use the light application text color.
+
+## v0.7.13 controlled archive research + functional weapon controls
+
+v0.7.13 applies the full clean-archive and Hardcore Revival 1.024 Normal-vs-Optional research pass. All five DLC archives are byte-identical between the two Hardcore variants; Base differs by exactly **83 bytes across 60 stack-value runs**, each at a verified stack marker +16. The pass confirms the alternate stack marker `B4254725`, corrects 26 previously stored controlled-stack originals back to their true clean-OG bytes, and replaces generic stack names with real item identities where the clean archive exposes them.
+
+The recovered Game.layer.0 workbook hashes were also translated safely into Steam `Game.layer.1` through portable hash/layout matching and readable weapon `*_CORE` ownership. The normal editor now exposes verified base magazine capacity, functional weapon range and base reload timing for 15 named weapons, plus newly confirmed EMP/ammunition, alcohol, Neuropozyne and crafting-component stack controls.
+
+Display-only weapon-stat records remain research-only so they are not confused with functional gameplay values.
+
+See **RESEARCH_SOURCES.txt** for the controlled-comparison evidence and translation details.
 
 ## v0.7.12 research integration
 
