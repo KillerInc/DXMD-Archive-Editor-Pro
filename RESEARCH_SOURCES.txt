@@ -1135,3 +1135,30 @@ The same comment thread confirms:
 - the original LightPower1 source is embedded in the JAR and can be extracted as ZIP content;
 - Epic installations may use Game.layer.0.all.archive instead of Steam's Game.layer.1,
   causing the old editor's absolute Steam offsets to read incorrect values.
+
+
+======================================================================
+37. MASTER INVENTORY COMMENT - STACK WIDTH CLAIM CONTRADICTED
+======================================================================
+Source:
+https://www.nexusmods.com/deusexmankinddivided/mods/37?tab=posts
+
+A 2025 comment by the uploader states that stack size is hardcoded to a one-byte value and
+therefore limited to FF / 255.
+
+Do NOT use that statement as a project mapping or storage-width rule.
+
+It conflicts with stronger direct evidence:
+- Master Inventory itself documents weapon-ammo stacks of 400 and Crafting Parts at 5000.
+- Hardcore Revival optional versions document ammo stacks of 500.
+- The older Inventory Mod documents Weapon Parts at 10000.
+- The project's controlled archive mappings represent stack fields as multi-byte
+  little-endian values and successfully identify values above 255.
+
+The useful portion of Master Inventory remains its direct structural mapping:
+8D0137A2 identifies stack records and the stack value follows the documented marker/zero/0C
+record structure.
+
+Research rule reinforced:
+A source can be trusted for an explicit hex-to-field identification without requiring every
+unrelated technical claim by that source to be adopted when stronger evidence contradicts it.
