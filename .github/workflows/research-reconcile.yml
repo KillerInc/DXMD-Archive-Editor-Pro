@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/research-reconcile.yml'
+      - 'research_reconcile.py'
   workflow_dispatch:
 
 permissions:
@@ -14,160 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      - name: Reconcile verified paragraph locations with Base research rows
-        shell: python
-        run: |
-          from pathlib import Path
-          import base64, gzip, io, re
-
-          RES = Path("src/main/resources")
-          parts = [
-              "base_research.part01.b64",
-              "base_research.part02.b64",
-              "base_research.tail01.b64",
-              "base_research.tail02.b64",
-              "base_research.tail03.b64",
-              "base_research.tail04.b64",
-              "base_research.tail05.b64",
-              "base_research.tail06.b64",
-              "base_research.tail07.b64",
-              "base_research.tail08.b64",
-              "base_research.tail09.b64",
-          ]
-          encoded = "".join((RES / p).read_text() for p in parts)
-          text = gzip.decompress(base64.b64decode(encoded)).decode("utf-8")
-
-          refs = []
-          rows = []
-          for line in text.splitlines():
-              if not line or line.startswith("#"): continue
-              x = line.split("\t")
-              if x[0] == "REFERENCES":
-                  refs = x[1:]
-              elif x[0] == "FIELD":
-                  off = int(x[1]); cat=x[2]; label=x[3]; orig=x[4]
-                  vals = dict(zip(refs, x[5:5+len(refs)]))
-                  rows.append({"offset":off,"category":cat,"label":label,"orig":orig,"refs":vals})
-
-          patch_encoded = (RES / "base_research_v069_patch.tsv.gz.b64").read_text()
-          patch = gzip.decompress(base64.b64decode(patch_encoded)).decode("utf-8")
-          remove = set()
-          add = []
-          for line in patch.splitlines():
-              if not line or line.startswith("#"): continue
-              x=line.split("\t")
-              if x[0]=="REMOVED":
-                  remove.update(x[1].split(",") if len(x)>1 and x[1] else [])
-              elif x[0]=="FIELD":
-                  off=int(x[1]); cat=x[2]; label=x[3]; orig=x[4]
-                  vals=dict(zip(refs,x[5:5+len(refs)]))
-                  add.append({"offset":off,"category":cat,"label":label,"orig":orig,"refs":vals})
-          rows=[r for r in rows if f"{r['offset']}:{len(r['orig'])//2}" not in remove]
-          rows.extend(add)
-          rows.sort(key=lambda r:r["offset"])
-
-          # Paragraph locations explicitly published in verified community research.
-          paragraphs = [
-            # Damage
-            ("Damage","Revolver L1",5022288),("Damage","Machine Pistol L1",5020368),
-            ("Damage","Battle Rifle L1",5023232),("Damage","Sniper Rifle L1",5023712),
-            ("Damage","Combat Rifle L1",5022768),
-            ("Damage","Revolver L2",5025152),("Damage","Sniper Rifle L2",5025632),
-            ("Damage","Combat Rifle L2",5024176),("Damage","Battle Rifle L2",5027520),
-            ("Damage","Machine Pistol L2",5027040),
-            ("Damage","Sniper Rifle L3",5027984),("Damage","Machine Pistol L3",5028496),
-            ("Damage","Revolver L3",5028896),("Damage","Combat Rifle L3",5029312),
-            ("Damage","Battle Rifle L3",5029712),
-            # Rate of fire
-            ("Rate of Fire","10mm Pistol L1",6551152),("Rate of Fire","10mm Pistol L2",6552048),("Rate of Fire","10mm Pistol L3",6551600),
-            ("Rate of Fire","Revolver L1",6543888),("Rate of Fire","Revolver L2",6547392),("Rate of Fire","Revolver L3",6548720),
-            ("Rate of Fire","Machine Pistol L1",6544304),("Rate of Fire","Machine Pistol L2",6548256),("Rate of Fire","Machine Pistol L3",6549552),
-            ("Rate of Fire","Tactical Shotgun L1",6545184),("Rate of Fire","Tactical Shotgun L2",6547808),("Rate of Fire","Tactical Shotgun L3",6549168),
-            ("Rate of Fire","Battle Rifle L1",6544752),("Rate of Fire","Battle Rifle L2",6546048),("Rate of Fire","Battle Rifle L3",6550320),
-            # Reload
-            ("Reload Speed","10mm Pistol L1",6588432),("Reload Speed","Stun Gun L1",6590560),
-            ("Reload Speed","Machine Pistol L1",6592304),("Reload Speed","Combat Rifle L1",5697648),
-            ("Reload Speed","Tactical Shotgun L1",6586192),("Reload Speed","Devastator L2",6596928),
-            ("Reload Speed","Battle Rifle L1",6592672),("Reload Speed","Lancer Rifle L1",6587680),
-            ("Reload Speed","Lancer Rifle L2",6594112),("Reload Speed","Sniper Rifle L1",6591568),
-            ("Reload Speed","Grenade Launcher L1",6588800),("Reload Speed","Tranquilizer Rifle L1",6586992),
-            ("Reload Speed","Tactical Shotgun L2",6586576),("Reload Speed","Battle Rifle L2",6589184),
-            ("Reload Speed","Combat Rifle L2",6589872),("Reload Speed","Machine Pistol L2",6590928),
-            ("Reload Speed","Revolver L2",6593424),("Reload Speed","Stun Gun L2",6593808),
-            ("Reload Speed","Grenade Launcher L2",6594432),("Reload Speed","Tranquilizer Rifle L2",6595680),
-            ("Reload Speed","Cote d'Azur L2",6596304),("Reload Speed","Sniper Rifle L2",6596608),
-            # Recoil
-            ("Recoil","Combat Rifle L1",6599744),("Recoil","Revolver L1",6559328),
-            ("Recoil","Tactical Shotgun L1",6557104),("Recoil","Tranquilizer Rifle L1",6560528),
-            ("Recoil","Battle Rifle L1",6561072),("Recoil","10mm Pistol L1",6562128),
-            ("Recoil","Cote d'Azur L1",6563104),("Recoil","Grenade Launcher L1",6564272),
-            ("Recoil","Machine Pistol L1",6562608),("Recoil","Cote d'Azur L2",6569744),
-            ("Recoil","Combat Rifle L2",6572528),
-            # Ammo capacity
-            ("Ammo Capacity","Stun Gun L1",4431792),("Ammo Capacity","Stun Gun L2",4433184),("Ammo Capacity","Stun Gun L3",4434944),
-            ("Ammo Capacity","Tranquilizer Rifle L1",4430480),("Ammo Capacity","Tranquilizer Rifle L2",4432448),("Ammo Capacity","Tranquilizer Rifle L3",4434608),
-            ("Ammo Capacity","Sniper Rifle L1",4428880),("Ammo Capacity","Sniper Rifle L2",4431376),("Ammo Capacity","Sniper Rifle L3",4426672),
-            ("Ammo Capacity","10mm Pistol L3",4435232),("Ammo Capacity","Tactical Shotgun L2",4427872),
-            # Silencer / fire pattern
-            ("Silencer","10mm Pistol",6767488),("Silencer","Machine Pistol",6766288),("Silencer","Combat Rifle",6769792),
-            ("Silencer","Tactical Shotgun",6768224),("Silencer","Lancer Rifle",6765424),("Silencer","Unknown owner",6769072),
-            ("Fire Pattern","10mm Pistol Full Auto",5665120),("Fire Pattern","Machine Pistol Full Auto",5665456),
-            ("Fire Pattern","Combat Rifle Semi Auto",5665760),("Fire Pattern","Tactical Shotgun Burst",5666576),
-            ("Fire Pattern","Revolver Hair Trigger",5664672),
-          ]
-
-          family_prefix = {
-              "Damage":"DAMAGE", "Rate of Fire":"RATE_OF_FIRE", "Reload Speed":"RELOAD_SPEED",
-              "Recoil":"RECOIL", "Ammo Capacity":"AMMO_CAPACITY", "Silencer":"SILENCER",
-              "Fire Pattern":"FIRE_PATTERN",
-          }
-
-          def changed_refs(r):
-              return [k for k,v in r["refs"].items() if v and v != r["orig"]]
-
-          out=[]
-          out.append("DXMD VERIFIED-PARAGRAPH / RESEARCH-ROW RECONCILIATION")
-          out.append("Generated by .github/workflows/research-reconcile.yml")
-          out.append("")
-          out.append(f"Decoded Base research rows after v0.6.9 patch: {len(rows)}")
-          out.append("Window: paragraph start through +768 bytes.")
-          out.append("MATCH means generated row family agrees with the verified paragraph family.")
-          out.append("Ownership is context only; it does not by itself prove a row's exact byte semantics.")
-          out.append("")
-
-          matches=[]
-          for fam,owner,start in sorted(paragraphs,key=lambda x:x[2]):
-              near=[r for r in rows if start <= r["offset"] < start+768]
-              prefix=family_prefix[fam]
-              famrows=[r for r in near if r["label"].upper().startswith(prefix)]
-              out.append(f"[{fam}] {owner}  paragraph={start} (0x{start:X})")
-              if not near:
-                  out.append("  no research rows in +768-byte window")
-              else:
-                  for r in near:
-                      delta=r["offset"]-start
-                      ok=r["label"].upper().startswith(prefix)
-                      cr=changed_refs(r)
-                      out.append(f"  {'MATCH' if ok else '     '} +{delta:4d}  off={r['offset']}  len={len(r['orig'])//2}  {r['label']}  [{r['category']}]  orig={r['orig']}  changed={','.join(cr) if cr else '-'}")
-                      if ok:
-                          matches.append((fam,owner,start,r))
-              out.append("")
-
-          out.append("================================================================")
-          out.append("UNIQUE FAMILY-OWNERSHIP CANDIDATES")
-          out.append("These are safe candidates for adding weapon-owner context, not automatic CONFIRMED semantics.")
-          out.append("================================================================")
-          seen=set()
-          for fam,owner,start,r in matches:
-              key=(r["offset"],r["label"])
-              if key in seen: continue
-              seen.add(key)
-              out.append(f"{r['offset']}\t{r['label']}\t{fam}\t{owner}\tparagraph={start}\tdelta={r['offset']-start}")
-
-          Path("RESEARCH_RECONCILIATION.txt").write_text("\n".join(out)+"\n")
-          print("\n".join(out[-80:]))
-
+      - name: Reconcile verified paragraph ownership
+        run: python research_reconcile.py
       - name: Commit reconciliation report
         shell: bash
         run: |
@@ -178,5 +27,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add RESEARCH_RECONCILIATION.txt
-          git commit -m "Generate DXMD research reconciliation report"
+          git commit -m "Generate boundary-safe DXMD reconciliation report"
           git push
