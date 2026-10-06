@@ -38,19 +38,19 @@ add("Rate of Fire",[("Revolver L1",6543888),("Machine Pistol L1",6544304),("Batt
 ("Revolver L3",6548720),("Tactical Shotgun L3",6549168),("Machine Pistol L3",6549552),("Battle Rifle L3",6550320),
 ("10mm Pistol L1",6551152),("10mm Pistol L3",6551600),("10mm Pistol L2",6552048)])
 add("Ammo Capacity",[("Sniper Rifle L3",4426672),("Tactical Shotgun L2",4427872),("Sniper Rifle L1",4428880),("Tranquilizer Rifle L1",4430480),
-("Sniper Rifle L2",4431376),("Stun Gun L1",4431792),("Tranquilizer Rifle L2",4432448),("Stun Gun L2",4433184),
+("Sniper Rifle L2",4431376),("Stun Gun L1",4431792),("Pistol Tutorial L1",4432112),("Tranquilizer Rifle L2",4432448),("Stun Gun L2",4433184),
 ("Tranquilizer Rifle L3",4434608),("Stun Gun L3",4434944),("10mm Pistol L3",4435232)])
-add("Fire Pattern",[("Revolver Hair Trigger",5664672),("10mm Pistol Full Auto",5665120),("Machine Pistol Full Auto",5665456),("Combat Rifle Semi Auto",5665760),("Tactical Shotgun Burst",5666576)])
+add("Fire Pattern",[("Revolver Hair Trigger",5664672),("10mm Pistol Full Auto",5665120),("Machine Pistol Full Auto",5665456),("Combat Rifle Semi Auto",5665760),("Pistol Tutorial Full Auto",5666064),("Tactical Shotgun Burst",5666576)])
 add("Silencer",[("Lancer Rifle",6765424),("Machine Pistol",6766288),("10mm Pistol",6767488),("Tactical Shotgun",6768224),("UNKNOWN",6769072),("Combat Rifle",6769792)])
 add("Recoil",[("Tactical Shotgun L1",6557104),("Revolver L1",6559328),("Tranquilizer Rifle L1",6560528),("Battle Rifle L1",6561072),
 ("10mm Pistol L1",6562128),("Machine Pistol L1",6562608),("Cote d'Azur L1",6563104),("Grenade Launcher L1",6564272),
 ("Cote d'Azur L2",6569744),("Battle Rifle L2",6570544),("Combat Rifle Tutorial L2",6571104),("Combat Rifle L2",6572528),("Combat Rifle L1",6599744)])
 add("Reload Speed",[("Combat Rifle L1",5697648),("Tactical Shotgun L1",6586192),("Tactical Shotgun L2",6586576),("Tranquilizer Rifle L1",6586992),
 ("Lancer Rifle L1",6587680),("Combat Rifle Tutorial L1",6588064),("10mm Pistol L1",6588432),("Grenade Launcher L1",6588800),
-("Battle Rifle L2",6589184),("Combat Rifle L2",6589872),("Stun Gun L1",6590560),("Machine Pistol L2",6590928),("Sniper Rifle L1",6591568),
+("Battle Rifle L2",6589184),("UNKNOWN",6589552),("Combat Rifle L2",6589872),("Cote d'Azur L1",6590240),("Stun Gun L1",6590560),("Machine Pistol L2",6590928),("Sniper Rifle L1",6591568),("UNKNOWN",6591920),
 ("Machine Pistol L1",6592304),("Battle Rifle L1",6592672),("Pistol Tutorial L1",6593056),("Revolver L2",6593424),("Stun Gun L2",6593808),
 ("UNKNOWN",6594112),("Grenade Launcher L2",6594432),("UNKNOWN",6594736),("Pistol Tutorial L2",6595056),("Combat Rifle Tutorial L2",6595360),
-("Tranquilizer Rifle L2",6595680),("UNKNOWN",6595984),("Cote d'Azur L2",6596304),("Sniper Rifle L2",6596608),("Devastator Shotgun L2",6596928),("UNKNOWN",6597232)])
+("Tranquilizer Rifle L2",6595680),("UNKNOWN",6595984),("Cote d'Azur L2",6596304),("Sniper Rifle L2",6596608),("UNKNOWN",6596928),("UNKNOWN",6597232)])
 
 prefix={"Damage":"DAMAGE","Rate of Fire":"RATE_OF_FIRE","Ammo Capacity":"AMMO_CAPACITY","Fire Pattern":"FIRE_PATTERN","Silencer":"SILENCER","Recoil":"RECOIL","Reload Speed":"RELOAD_SPEED"}
 out=[f"Decoded rows: {len(rows)}","Boundary-safe verified paragraph ownership reconciliation",""]
