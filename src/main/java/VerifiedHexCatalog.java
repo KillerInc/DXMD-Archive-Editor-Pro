@@ -66,7 +66,11 @@ final class VerifiedHexCatalog {
         m("5F317320","Base reload speed"),
         m("FA600225","Reload-speed upgrade bonus"),
         m("2B4352B8","Functional weapon damage bonus / malus"),
-        m("0519EE4D","Display-only weapon damage modifier"),
+        m("578E035D","Display-only weapon accuracy"),
+        m("0519EE4D","Display-only weapon damage / lethality"),
+        m("652633EC","Display-only weapon rate of fire"),
+        m("4801D357","Display-only weapon recoil"),
+        m("3EE6E864","Display-only weapon reload speed"),
 
         m("379F683F","Context-sensitive augmentation energy / camera-FOV value"),
         m("22C6ABC4","Takedown energy-use function"),
@@ -79,6 +83,7 @@ final class VerifiedHexCatalog {
         layout("8BB5F8E1",16,4,"item inventory width"),
         layout("8E6BC587",16,4,"weapon / multitool inventory width"),
         layout("0E609B24",16,4,"inventory height"),
+        layout("5FA99754",16,4,"alternate inventory height"),
         layout("8D0137A2",16,4,"stack amount"),
         layout("4A376618",16,4,"blurred-vision duration Float32"),
         layout("72C142AA",16,4,"Biocell energy recovery Float32"),
@@ -93,6 +98,11 @@ final class VerifiedHexCatalog {
         layout("72365784",16,4,"rate-of-fire upgrade bonus Float32"),
         layout("A1B89DD4",16,4,"weapon range Float32"),
         layout("5F317320",16,4,"base reload speed Float32"),
+        layout("578E035D",16,4,"display accuracy integer"),
+        layout("0519EE4D",16,4,"display damage / lethality integer"),
+        layout("652633EC",16,4,"display rate-of-fire integer"),
+        layout("4801D357",16,4,"display recoil integer"),
+        layout("3EE6E864",16,4,"display reload-speed integer"),
         layout("22C6ABC4",16,4,"takedown energy cost Float32"),
         layout("4C1BC5B1",16,4,"automatic energy-regeneration amount Float32")
     };
